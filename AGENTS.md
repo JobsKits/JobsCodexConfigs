@@ -1,4 +1,4 @@
-# `Jobs Codex 工作规约`
+# Jobs [**Codex**](https://openai.com/codex) 工作规约
 
 ![Jobs倾情奉献](https://picsum.photos/1500/400 "Jobs出品，必属精品")
 
@@ -8,7 +8,7 @@
 
 ## 🔥 <font id=前言>前言</font> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-> 这份文件是 Jobs 本机 Codex 的长期工作约定。默认优先服务 MacOS 原生 Shell / `.sh` / `.command` 脚本、Markdown 文档、CocoaPods `*.podspec`，并预留 OC、Swift、Python、Dart / Flutter 的写作规范。
+> 这份文件是 Jobs 本机 [**Codex**](https://openai.com/codex) 的长期工作约定。默认优先服务 MacOS 原生 Shell / `.sh` / `.command` 脚本、[**Markdown**](https://markdown.cn) 文档、[**CocoaPods**](https://cocoapods.org/) `*.podspec`，并预留 OC、[**Swift**](https://www.swift.org/)、[**Python**](https://www.python.org)、Dart / [**Flutter**](https://flutter.dev/) 的写作规范。
 
 ## 一、总原则 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
@@ -57,7 +57,7 @@
   main "$@"
   ```
 
-- 优先写原生 Shell，能用 MacOS 自带工具解决就不引入 Python / [**Node.js**](https://nodejs.org/) / [**Ruby**](https://www.ruby-lang.org/) 依赖。
+- 优先写原生 Shell，能用 MacOS 自带工具解决就不引入 [**Python**](https://www.python.org) / [**Node.js**](https://nodejs.org/) / [**Ruby**](https://www.ruby-lang.org/) 依赖。
 - 涉及批量文件处理时，使用 `find ... -print0` + `while IFS= read -r -d ''`，路径必须全程加引号，兼容空格、中文、括号和特殊符号。
 - 涉及文本替换时，优先使用 `grep -Fq`；复杂替换可以使用 `perl`，避免脆弱的 `sed` 转义。
 
@@ -145,7 +145,7 @@
   }
   ```
 
-### 2.4、Homebrew / MacOS 环境
+### 2.4、[**Homebrew**](https://brew.sh/) / MacOS 环境
 
 - [**Homebrew**](https://brew.sh/) 相关脚本必须识别 Apple Silicon 和 Intel：
 
@@ -159,7 +159,7 @@
 - 写入 shellenv 时必须防重复追加，使用明显的 header / footer 块。
 - 写入配置后要让当前终端立即生效：`eval "$shellenv_cmd"`。
 - 已安装 [**Homebrew**](https://brew.sh/) 时，不自动执行 `brew update && brew upgrade && brew cleanup && brew doctor && brew -v`，必须询问用户。
-- 涉及 CLT、[**Xcode**](https://developer.apple.com/xcode/)、[**CocoaPods**](https://cocoapods.org/)、[**Flutter**](https://flutter.dev/)、[**Android Studio**](https://developer.android.com/studio)、[**Java**](https://www.java.com/)、[**Ruby**](https://www.ruby-lang.org/)、[**Node.js**](https://nodejs.org/) 等工具链时，先检查再执行，失败时输出下一步排查方向。
+- 涉及 CLT、[**Xcode**](https://developer.apple.com/xcode/)、[**CocoaPods**](https://cocoapods.org/)、[**Flutter**](https://flutter.dev/)、[**Android Studio**](https://developer.android.com/studio?hl=zh-c)、[**Java**](https://www.java.com/)、[**Ruby**](https://www.ruby-lang.org/)、[**Node.js**](https://nodejs.org/) 等工具链时，先检查再执行，失败时输出下一步排查方向。
 
 ### 2.5、批量脚本 / 压缩包输出
 
@@ -187,11 +187,41 @@
 
 - 修改 `.command` 后确认 shebang、`SCRIPT_DIR` / `LOG_FILE`、`main "$@"`、路径引号、危险操作 `YES` 确认、普通升级动作不是默认执行。
 
-## 三、Markdown 文档（`*.md`） <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-### 3.1、整体风格
+## 三、Git 仓库规则 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+### 3.1、🌍JobsMacEnvVarConfigs 仓库
+
+- 处理 `🌍JobsMacEnvVarConfigs` 仓库时，先分清根目录入口脚本和 `scripts/` 下的解耦脚本，不要把二者混成一类。
+- `scripts/` 是存放解耦脚本代码的目录；这里面的脚本主文件名对应终端里的命令名，脚本文件统一以 `.command` 作为后缀。
+- `scripts/` 下每一个具体的 `*.command` 脚本，都必须由同名文件夹包裹，并且每个脚本文件夹内都必须放置这个脚本对应的 `README.md`。
+
+  ```text
+  scripts/
+  ├── install.command/
+  │   ├── install.command
+  │   └── README.md
+  └── update.command/
+      ├── update.command
+      └── README.md
+  ```
+
+- `scripts/install.command` 和与 `scripts/` 平级的 `install.command` 不是同一个职责：
+
+  | 入口位置 | 核心职责 | 处理原则 |
+  | -------- | -------- | -------- |
+  | `scripts/install.command` | 利用 `zsh` 配置安装 MacOS 系统的各种自定义依赖。 | 面向依赖安装和本机环境构建。 |
+  | `install.command` | 将 `JobsMacEnvVarConfigs` 内容同步到系统。 | 主要瞄准终端 `zsh` 配置同步。 |
+
+- `scripts/update.command` 是全员升级入口；凡是 `scripts/install.command` 新增、删除或调整安装能力，都必须同步更新 `scripts/update.command`，保持安装与升级能力平行，不允许只改安装不改升级。
+- 写或改这个仓库的脚本时，要随时对照 `install.command` 和 `update.command`：安装负责“从无到有”，升级负责“已有环境持续更新”，两者覆盖的工具链和交互顺序应尽量一致。
+
+## 四、[**Markdown**](https://markdown.cn) 文档（`*.md`） <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+### 4.1、整体风格
 
 - Jobs 的 `.md` 文档默认使用中文技术笔记风格，结构清楚、标题醒目、能直接复制命令执行。
+- 修改 `AGENTS.md` 本身时，也必须反哺本文件：把它当成普通 [**Markdown**](https://markdown.cn) 技术文档同步套用本章规则，专有名词按固定链接表补链，归属于上一条的补充内容必须右缩进。
 - 文档开头可以使用 Jobs 风格封面：
 
   ```markdown
@@ -220,9 +250,10 @@
   <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
   ```
 
-### 3.2、代码块与缩进
+### 4.2、代码块与缩进
 
 - 命令示例统一使用 fenced code block，并标注语言。
+- 凡是内容属于上一条说明的补充、示例或展开，都必须向右缩进两个空格，让视觉层级归属于上一条；包括代码块、表格、引用、图片、[**Mermaid**](https://mermaid.js.org) 流程图、子列表。
 - bullet 下方的代码块必须缩进两个空格，让代码块视觉上归属于这条说明；不要让代码块顶到页面左边。
 
   ````markdown
@@ -238,32 +269,88 @@
     ```
   ````
 
-- [**Markdown**](https://www.markdownguide.org/) 中的路径、命令、文件名、变量名都用反引号包起来，例如 `LOG_FILE`、`/tmp/脚本名.log`、`README.md`。
+- bullet 下方的表格必须写成上一条的子内容：上一条 bullet 结束后保留空行，表格每一行源码都以两个空格开头，格式必须像下面这样，不要顶格写表格。
 
-### 3.3、外链、表格与流程图
+  ````markdown
+  - 如果用户明确给了新的官方链接，以用户最新指定为准，顺手更新这张表。
 
-- 能外链的第三方工具、框架、语言、平台，优先用官方链接，并按 Jobs 文档习惯写成 `[**名称**](URL)`，例如 [**Homebrew**](https://brew.sh/)、[**Flutter**](https://flutter.dev/)、[**CocoaPods**](https://cocoapods.org/)、[**Mermaid**](https://mermaid.js.org/)。
+    | 推荐写法                            | 识别别名          | 固定链接                  |
+    | ----------------------------------- | ----------------- | ------------------------- |
+    | [**Markdown**](https://markdown.cn) | `Markdown` / `md` | `https://markdown.cn`     |
+    | [**Mermaid**](https://mermaid.js.org) | `Mermaid`         | `https://mermaid.js.org`  |
+  ````
+
+- [**Markdown**](https://markdown.cn) 中的路径、命令、文件名、变量名都用反引号包起来，例如 `LOG_FILE`、`/tmp/脚本名.log`、`README.md`。
+
+### 4.3、外链、表格与流程图
+
+- 能外链的第三方工具、框架、语言、平台，优先用官方链接，并按 Jobs 文档习惯写成 `[**名称**](URL)`，例如 [**Homebrew**](https://brew.sh/)、[**Flutter**](https://flutter.dev/)、[**CocoaPods**](https://cocoapods.org/)、[**Mermaid**](https://mermaid.js.org)。
 - 标题、表格、正文第一次出现第三方名词时可以直接加链接；代码块、命令、路径、文件名里的字面量不要加链接。
 - 表格用于阶段说明、参数说明、目录统计、命令清单；表头短一点，内容能扫读。
-- 复杂流程优先使用 [**Mermaid**](https://mermaid.js.org/)。
+- 复杂流程优先使用 [**Mermaid**](https://mermaid.js.org)。
 - 对用户有风险的地方要写明白，不要藏在代码块后面。危险动作必须在文档里说明确认方式，例如“必须输入 `YES` 才会继续”。
 - 文档语气可以保留 Jobs 风格短句，例如“Jobs出品，必属精品”“我是有底线的”，但正文要优先服务操作，不堆装饰。
 
-### 3.4、README 固定内容
+### 4.3.1、专有名词固定超链接
+
+- 写 [**Markdown**](https://markdown.cn) / README / AGENTS 这类技术文档时，遇到下表里的专有名词，正文第一次出现时优先写成 `[**名称**](URL)`；需要强调或便于点击时，后续也可以继续加链接。
+- 同一个工具有多个常见写法时，正文优先使用“推荐写法”；括号里的别名只用于识别，不强行改代码块里的命令。
+- 代码块、命令、路径、文件名、变量名里的字面量不要加超链接，例如 `brew install fzf`、`Podfile`、`python3`、`go-task/tap/go-task`。
+- 如果用户明确给了新的官方链接，以用户最新指定为准，顺手更新这张表。
+
+  | 推荐写法                                                          | 识别别名                                   | 固定链接                                             |
+  | ----------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------- |
+  | [**Markdown**](https://markdown.cn)                               | `Markdown` / `md`                          | `https://markdown.cn`                                |
+  | [**Swift**](https://www.swift.org/)                               | `Swift`                                    | `https://www.swift.org/`                             |
+  | [**Flutter**](https://flutter.dev/)                               | `Flutter`                                  | `https://flutter.dev/`                               |
+  | [**Ruby**](https://www.ruby-lang.org)                             | `Ruby`                                     | `https://www.ruby-lang.org`                          |
+  | [**Homebrew**](https://brew.sh/)                                  | `Homebrew` / `brew`                        | `https://brew.sh/`                                   |
+  | [**Gem**](https://rubygems.org/)                                  | `Gem` / `gem` / `RubyGems`                 | `https://rubygems.org/`                              |
+  | [**CocoaPods**](https://cocoapods.org/)                           | `CocoaPods` / `Cocoapods` / `pod`          | `https://cocoapods.org/`                             |
+  | [**git-lfs**](https://git-lfs.com/)                               | `git-lfs` / `Git LFS`                      | `https://git-lfs.com/`                               |
+  | [**gh**](https://formulae.brew.sh/formula/gh)                     | `gh` / `GitHub CLI`                        | `https://formulae.brew.sh/formula/gh`                |
+  | [**nushell**](https://www.nushell.sh/)                            | `nushell` / `nu`                           | `https://www.nushell.sh/`                            |
+  | [**rbenv**](https://formulae.brew.sh/formula/rbenv)               | `rbenv`                                    | `https://formulae.brew.sh/formula/rbenv`             |
+  | [**Node.js**](https://nodejs.org)                                 | `node` / `Node.js`                         | `https://nodejs.org`                                 |
+  | [**jenv**](https://www.jenv.be)                                   | `jenv`                                     | `https://www.jenv.be`                                |
+  | [**fvm**](https://fvm.app)                                        | `fvm`                                      | `https://fvm.app`                                    |
+  | [**pnpm**](https://pnpm.io/)                                      | `pnpm`                                     | `https://pnpm.io/`                                   |
+  | [**Python**](https://www.python.org)                              | `python` / `python3` / `Python`            | `https://www.python.org`                             |
+  | [**fastlane**](https://fastlane.tools)                            | `fastlane`                                 | `https://fastlane.tools`                             |
+  | [**MySQL**](https://www.mysql.com)                                | `mysql` / `MySQL`                          | `https://www.mysql.com`                              |
+  | [**Hugo**](https://gohugo.io)                                     | `hugo` / `Hugo`                            | `https://gohugo.io`                                  |
+  | [**OpenJDK**](https://openjdk.org)                                | `openjdk` / `OpenJDK`                      | `https://openjdk.org`                                |
+  | [**yt-dlp**](https://ytdlp.online)                                | `yt-dlp`                                   | `https://ytdlp.online`                               |
+  | [**FFmpeg**](https://ffmpeg.org)                                  | `ffmpeg` / `FFmpeg`                        | `https://ffmpeg.org`                                 |
+  | [**go-task**](https://formulae.brew.sh/formula/go-task)           | `go-task` / `tap/go-task`                  | `https://formulae.brew.sh/formula/go-task`           |
+  | [**uv**](https://formulae.brew.sh/formula/uv)                     | `uv`                                       | `https://formulae.brew.sh/formula/uv`                |
+  | [**fzf**](https://formulae.brew.sh/formula/fzf)                   | `fzf`                                      | `https://formulae.brew.sh/formula/fzf`               |
+  | [**lazygit**](https://lazygit.dev)                                | `lazygit`                                  | `https://lazygit.dev`                                |
+  | [**dufs**](https://formulae.brew.sh/formula/dufs)                 | `dufs`                                     | `https://formulae.brew.sh/formula/dufs`              |
+  | [**Codex**](https://openai.com/codex)                             | `codex` / `Codex`                          | `https://openai.com/codex`                           |
+  | [**Mermaid**](https://mermaid.js.org)                             | `Mermaid`                                  | `https://mermaid.js.org`                             |
+  | [**Hammerspoon**](https://www.hammerspoon.org)                    | `Hammerspoon`                              | `https://www.hammerspoon.org`                        |
+  | [**VLC**](https://www.videolan.org/vlc)                           | `VLC`                                      | `https://www.videolan.org/vlc`                       |
+  | [**trex**](https://formulae.brew.sh/cask/trex)                    | `trex`                                     | `https://formulae.brew.sh/cask/trex`                 |
+  | [**Visual Studio Code**](https://code.visualstudio.com)           | `Visual Studio Code` / `VS Code` / `code`  | `https://code.visualstudio.com`                      |
+  | [**Android Studio**](https://developer.android.com/studio?hl=zh-c) | `Android Studio`                           | `https://developer.android.com/studio?hl=zh-c`       |
+  | [**GitHub**](https://github.com)                                  | `GitHub` / `github`                        | `https://github.com`                                 |
+
+### 4.4、README 固定内容
 
 - 每个可双击脚本目录优先放同名脚本和 `README.md`。
 - README 用中文说明，适合用户双击前先看懂：用途、适用场景、执行前检查、操作流程、是否有风险、日志位置、常见问题。
 - 技术文档优先包含这些块，按需要取舍：`前言`、`适用场景`、`运行方式`、`执行前检查`、`脚本执行命令`、`流程图`、`日志文件`、`常见问题`、`风险说明`、`未执行声明`。
 
-## 四、Podspec 文件（`*.podspec`） <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## 五、[**CocoaPods**](https://cocoapods.org/) Podspec 文件（`*.podspec`） <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-### 4.1、适用范围
+### 5.1、适用范围
 
 - 本规范来自 `/Users/jobs/Documents/JobsOCBaseConfigDemo/JobsByPods` 下 69 个 `*.podspec` 的现有写法。
 - 适用于 Jobs 本地管理的 [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html) Pods、`Extra` 扩展 Pods、聚合 Pods，以及 `ManualByOCPods@Pods` 下手动托管的第三方 Pods。
 - 新增或升级 podspec 时，先看同类 Pod 的现有写法，再按本规范收口。不要凭空换一套 [**CocoaPods**](https://cocoapods.org/) 风格。
 
-### 4.2、整体结构
+### 5.2、整体结构
 
 - 自研 Pod / Extra Pod 优先使用同目录 `JobsPodspecKit.rb`：
 
@@ -295,7 +382,7 @@
   spec.default_subspecs = 'Core'
   ```
 
-### 4.3、基础信息与 source
+### 5.3、基础信息与 source
 
 - 自研 Pod 的 `homepage` 可以使用 `https://example.local/PodName`；已经有真实 Git 地址的 Pod 保留真实地址。
 - 自研 Pod 作者默认：`spec.author = { 'Jobs' => 'lg295060456@gmail.com' }`。
@@ -306,7 +393,7 @@
 - 需要模拟远程 tag 或聚合仓库时，才使用：`spec.source = { :git => "file://#{__dir__}", :tag => spec.version.to_s }`。
 - 第三方 Manual Pod 如果保留上游源码声明，可以继续使用：`spec.source = { :git => 'https://github.com/owner/repo.git', :tag => spec.version.to_s }`。
 
-### 4.4、入口头文件 / Core / Support
+### 5.4、入口头文件 / Core / Support
 
 - 有根入口头文件时，根层只暴露入口头：
 
@@ -333,18 +420,18 @@
 - `Core` 依赖 `Support` 时，优先使用 `JobsPodspecKitForPodName.add_dynamic_support_dependencies(ss, spec, support_context)`。
 - 如果某个 Support 子路径必须显式依赖，可以只补最小必要项，例如 `ss.dependency 'JobsOCDefs/Support/UIKit'`。
 
-### 4.5、资源、排除与依赖
+### 5.5、资源、排除与依赖
 
 - 源码扩展默认覆盖 `h,m,mm`。
 - 资源扩展默认覆盖 `png,jpg,jpeg,gif,webp,svg,pdf,json,plist,bundle,xib,nib,storyboard,xcassets,strings,stringsdict,ttf,otf,mp4,aiff`。
 - `source_files` 只匹配源码和头文件；图片、xib、bundle、json、plist 等进入 `resources`，不要混在源码 glob 里。
 - 自研 Pod 优先调用 `JobsPodspecKitForPodName.apply_standard_exclude_files(spec)`。
-- Manual Pod 没有 `JobsPodspecKit` 时，要手写完整排除清单，至少覆盖 macOS 垃圾文件、Git / SVN、CocoaPods、Xcode、Demo / Example / Test、文档截图、CI / 临时 / 压缩包。
+- Manual Pod 没有 `JobsPodspecKit` 时，要手写完整排除清单，至少覆盖 macOS 垃圾文件、Git / SVN、[**CocoaPods**](https://cocoapods.org/)、[**Xcode**](https://developer.apple.com/xcode/)、Demo / Example / Test、文档截图、CI / 临时 / 压缩包。
 - `frameworks` 使用数组，按现有 Jobs 风格多行写。
-- 依赖优先一行一个，放在 `frameworks` 后或对应 subspec 内。有版本约束时使用 CocoaPods 原生写法，例如 `spec.dependency 'lottie-ios', '~> 2.5.3'`。
+- 依赖优先一行一个，放在 `frameworks` 后或对应 subspec 内。有版本约束时使用 [**CocoaPods**](https://cocoapods.org/) 原生写法，例如 `spec.dependency 'lottie-ios', '~> 2.5.3'`。
 - 聚合 Pod 依赖很多时，可以先定义 `common_dependencies`，再用 lambda 统一添加。
 
-### 4.6、xcconfig 与校验
+### 5.6、xcconfig 与校验
 
 - 自研 Pod 默认使用 `JobsPodspecKitForPodName.apply_standard_xcconfig(spec)`。
 - 标准配置应包含 `DEFINES_MODULE`、`HEADER_SEARCH_PATHS`、`CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES`。
@@ -363,7 +450,7 @@
   pod install --no-repo-update
   ```
 
-- 如果当前机器环境不适合实际执行 `pod`，至少做 Ruby 语法检查：
+- 如果当前机器环境不适合实际执行 `pod`，至少做 [**Ruby**](https://www.ruby-lang.org) 语法检查：
 
   ```shell
   ruby -c PodName.podspec
@@ -371,7 +458,7 @@
 
 - 修改 podspec 后要重点检查：`spec.name` 是否和文件名一致、入口头是否真实存在、`Core` / `Support` glob 是否命中、依赖是否形成循环、资源是否被错误放进 `source_files`。
 
-## 五、OC 写作规范 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## 六、OC 写作规范 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 <!--
 后续补充 Objective-C 规范时，在这里继续写：
@@ -386,7 +473,7 @@
 - 单元测试 / UI 测试
 -->
 
-## 六、[**Swift**](https://www.swift.org/) 写作规范 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## 七、[**Swift**](https://www.swift.org/) 写作规范 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 <!--
 后续补充 Swift 规范时，在这里继续写：
@@ -400,7 +487,7 @@
 - 单元测试 / UI 测试
 -->
 
-## 七、[**Python**](https://www.python.org/) 写作规范 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## 八、[**Python**](https://www.python.org/) 写作规范 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 <!--
 后续补充 Python 规范时，在这里继续写：
@@ -413,7 +500,7 @@
 - 格式化 / lint / 测试
 -->
 
-## 八、[**Dart**](https://dart.dev/) / [**Flutter**](https://flutter.dev/) 写作规范 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## 九、[**Dart**](https://dart.dev/) / [**Flutter**](https://flutter.dev/) 写作规范 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 <!--
 后续补充 Dart / Flutter 规范时，在这里继续写：
