@@ -14,3 +14,5 @@
 
 - `【MacOS】✂️源文件压缩拆分➤子卷.command`：把大文件拆成 `原文件名@001of003` 这类子卷。
 - `【MacOS】🧩子卷➤合而为一源文件.command`：把子卷合并回源文件；同时提供给 Codex 注入脚本使用的非交互入口。
+
+<a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
