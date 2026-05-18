@@ -1,0 +1,62 @@
+{
+  "projectRoot": "/Users/jobs/Documents/Github/JobsConfigOS",
+  "generatedAtMs": 1778567291977,
+  "currentSuggestionIds": [
+    "37889337-af07-4bcd-8ed6-2297c6cb4f14",
+    "eabec112-2771-4523-8a4f-5e4030538528"
+  ],
+  "suggestions": [
+    {
+      "id": "8bbe45e9-17c5-4a61-a638-93c14ad41f2c",
+      "title": "Stage the new six-repo submodule layout before the old modules disappear",
+      "description": "This repo was cloned and reset this morning, and the current index deletes `VScodeConfig@Flutter` plus `🔽JobsSoftware.MacOS` while `.gitmodules` is blank. Codex can turn the new downloader’s `SUBMODULE_REPO_URLS` list into a coherent staged migration instead of leaving the repo half-swapped.",
+      "prompt": "Finish the submodule migration in this repo. Use `【MacOS】⏬下载配置当前Git子模块.command` as the source of truth, regenerate the correct `.gitmodules` entries and gitlinks for the listed repos, and leave me with a clean staged change instead of the current state where `.gitmodules` is empty and the old submodules are being deleted.",
+      "appIds": [],
+      "status": "pending",
+      "createdAtMs": 1778379031792,
+      "updatedAtMs": 1778379031792
+    },
+    {
+      "id": "9d66dee7-cb3b-4f8f-bac4-22f71c2b09d8",
+      "title": "Replace the legacy one-submodule add script before it rewrites this repo wrong",
+      "description": "The older `【MacOS】⬆️Git添加子模块.command` still hard-codes `VScodeConfigByFlutter` and a single `VScodeConfig@Flutter` path, even though you created a new multi-submodule flow today. Codex can rewrite or retire it now so the next run does not recreate the old layout by mistake.",
+      "prompt": "Update `【MacOS】⬆️Git添加子模块.command` so it matches the new multi-submodule layout, or remove it if it is now dangerous. Keep the useful safety behavior, but make sure it no longer points at `VScodeConfigByFlutter` or assumes there is only one submodule.",
+      "appIds": [],
+      "status": "pending",
+      "createdAtMs": 1778379031792,
+      "updatedAtMs": 1778379031792
+    },
+    {
+      "id": "334a9e28-8cc4-4b09-9e36-803d4dcdca21",
+      "title": "Make the new downloader preview destructive steps before first real use",
+      "description": "Today’s new downloader defaults to deleting conflict paths and resetting the parent repo before syncing submodules. Codex can add a first-run preview that prints exactly what would be removed or reset, which is useful now because the repo is already sitting in a partially migrated state.",
+      "prompt": "Harden `【MacOS】⏬下载配置当前Git子模块.command` for first use. Add a preview-oriented mode that shows which submodule paths, `.gitmodules` entries, and local repos would be removed or reset before destructive steps run, while keeping the current automation flow intact.",
+      "appIds": [],
+      "status": "pending",
+      "createdAtMs": 1778379031792,
+      "updatedAtMs": 1778379031792
+    },
+    {
+      "id": "37889337-af07-4bcd-8ed6-2297c6cb4f14",
+      "title": "Replace stage 8 with the repo’s submodule bootstrap flow",
+      "description": "Your README and today’s repo sync work now center this project on `【MacOS】⏬下载配置当前Git子模块.command`, but `【MacOS】🆕新系统配置.command` still clones plain `JobsSoftware.MacOS` and `JobsMacEnvVarConfig` into `~/Desktop/JobsKits`. Codex can switch stage 8 to the repo-local submodule path and clean up the stale naming assumptions in one pass.",
+      "prompt": "Update `【MacOS】🆕新系统配置.command` so stage 8 uses this repo’s submodule bootstrap flow instead of cloning `JobsSoftware.MacOS` and `JobsMacEnvVarConfig` into `~/Desktop/JobsKits`. Keep it consistent with `.gitmodules`, `【MacOS】⏬下载配置当前Git子模块.command`, and the current `⏬JobsSoftware.MacOS` naming, then patch the README examples that still assume the old direct-clone flow.",
+      "appIds": [],
+      "status": "pending",
+      "createdAtMs": 1778567291977,
+      "updatedAtMs": 1778567291977
+    },
+    {
+      "id": "eabec112-2771-4523-8a4f-5e4030538528",
+      "title": "Make the Xcode simulator step safe while Xcode is open",
+      "description": "You edited the macOS initializer today, and Xcode is running right now. The script still unconditionally wipes Xcode and CoreSimulator caches before `xcodebuild -downloadPlatform iOS`, so Codex can add preflight checks, safer skip behavior, and clearer recovery output before this causes a bad run on the machine you’re actively using.",
+      "prompt": "Harden the `stage_xcode_simulator_assets` part of `【MacOS】🆕新系统配置.command` for real use on an active machine: detect when Xcode or Simulator is open, avoid blindly deleting caches in that case, add an override/skip path, and update the README so the behavior is documented clearly.",
+      "appIds": [
+        "com.apple.dt.Xcode"
+      ],
+      "status": "pending",
+      "createdAtMs": 1778567291977,
+      "updatedAtMs": 1778567291977
+    }
+  ]
+}

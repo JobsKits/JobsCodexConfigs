@@ -1,0 +1,38 @@
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
+
+notify = ["/Users/jobs/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+
+[marketplaces.openai-bundled]
+last_updated = "2026-05-18T11:15:11Z"
+source_type = "local"
+source = "/Users/jobs/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[marketplaces.openai-primary-runtime]
+last_updated = "2026-05-16T01:48:57Z"
+source_type = "local"
+source = "/Users/jobs/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."chrome@openai-bundled"]
+enabled = true
+
+[projects."/Users/jobs/Documents/JobsOCBaseConfigDemo"]
+trust_level = "trusted"
+
+[projects."/Users/jobs/Documents/Github/JobsConfigOS"]
+trust_level = "trusted"
