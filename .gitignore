@@ -1,0 +1,5 @@
+
+# Codex runtime data
+**/.codex/sessions/
+**/.codex/logs*.sqlite
+**/.codex/logs*.sqlite-*
