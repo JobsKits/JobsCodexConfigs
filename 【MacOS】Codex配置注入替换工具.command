@@ -24,9 +24,16 @@ resolve_toolkit_dir() {
 TOOLKIT_DIR="$(resolve_toolkit_dir)"
 CONFIGS_DIR="${TOOLKIT_DIR}/codex配置文件夹"
 GLOBAL_AGENTS_PATH="${TOOLKIT_DIR}/AGENTS.md"
+HELPER_DIR="${TOOLKIT_DIR}/【MacOS】文件分拆（合并）command"
+MERGE_HELPER_SCRIPT="${HELPER_DIR}/【MacOS】🧩子卷➤合而为一源文件.command"
 TARGET_CODEX_DIR="${TARGET_CODEX_DIR:-${HOME}/.codex}"
 BREW_BIN=""
-SOURCE_CODEX_DIR=""
+SOURCE_ACCOUNT_DIR=""
+SOURCE_ACCOUNT_NAME=""
+PREPARED_SOURCE_CODEX_DIR=""
+MERGED_ZIP_FILE=""
+EXTRACTED_CODEX_DIR=""
+TEMP_WORK_DIRS=()
 
 log()            { echo -e "$1" | tee -a "$LOG_FILE"; }
 color_echo()     { log "\033[1;32m$1\033[0m"; }
@@ -52,6 +59,22 @@ run_command() {
   fi
   return "$status"
 }
+
+register_temp_dir() {
+  local dir="$1"
+  [[ -n "$dir" && -d "$dir" ]] && TEMP_WORK_DIRS+=("$dir")
+}
+
+cleanup_temp_dirs() {
+  local dir=""
+  for dir in "${TEMP_WORK_DIRS[@]}"; do
+    if [[ -n "$dir" && -d "$dir" && "$dir" == /tmp/* ]]; then
+      /bin/rm -rf -- "$dir" >/dev/null 2>&1 || true
+    fi
+  done
+}
+
+trap cleanup_temp_dirs EXIT INT TERM
 
 show_readme_and_wait() {
   local readme_path="${SCRIPT_DIR}/README.md"
@@ -92,8 +115,8 @@ strip_outer_quotes() {
   local value="$1"
   value="${value%$'\r'}"
   value="${value%$'\n'}"
-  value="${value#"}"
-  value="${value%"}"
+  value="${value#\"}"
+  value="${value%\"}"
   value="${value#\'}"
   value="${value%\'}"
   print -r -- "$value"
@@ -141,7 +164,7 @@ ensure_homebrew_shellenv() {
     {
       echo ""
       echo "$header"
-      echo "eval "\$(${brew_path} shellenv)""
+      echo "eval \"\$(${brew_path} shellenv)\""
       echo "$footer"
     } >> "$zprofile_path"
     success_echo "已写入 Homebrew shellenv 到：${zprofile_path}"
@@ -210,7 +233,7 @@ ensure_fzf() {
 
   warn_echo "未检测到 fzf，脚本需要 fzf 菜单选择配置。"
   if ! ask_any_to_run "是否执行 brew install fzf"; then
-    error_echo "缺少 fzf，无法继续选择 .codex 配置。"
+    error_echo "缺少 fzf，无法继续选择 Codex 配置。"
     exit 1
   fi
 
@@ -287,6 +310,12 @@ validate_toolkit_layout() {
     exit 1
   fi
 
+  if [[ -f "$MERGE_HELPER_SCRIPT" ]]; then
+    success_echo "已检测到子卷合并脚本：${MERGE_HELPER_SCRIPT}"
+  else
+    warn_echo "未找到子卷合并脚本，将使用内置兜底合并逻辑：${MERGE_HELPER_SCRIPT}"
+  fi
+
   success_echo "工具包目录检查通过。"
   gray_echo "工具包根目录：${TOOLKIT_DIR}"
   gray_echo "配置目录：${CONFIGS_DIR}"
@@ -294,33 +323,110 @@ validate_toolkit_layout() {
   gray_echo "目标注入目录：${TARGET_CODEX_DIR}"
 }
 
-source_codex_has_effective_content() {
-  local source_dir="$1"
+has_effective_entry() {
+  local dir="$1"
   local first_item=""
-  first_item="$(find "$source_dir" -mindepth 1 \
+  first_item="$(find "$dir" -mindepth 1 \
     ! -name ".DS_Store" \
     ! -name ".localized" \
+    ! -name ".gitkeep" \
     -print -quit 2>/dev/null)"
   [[ -n "$first_item" ]]
 }
 
-wait_until_source_codex_ready() {
+source_codex_has_effective_content() {
   local source_dir="$1"
-  local parent_dir="$(dirname "$source_dir")"
-  local account_name="$(basename "$parent_dir")"
+  [[ -d "$source_dir" ]] || return 1
+  has_effective_entry "$source_dir"
+}
+
+count_immediate_effective_files() {
+  local dir="$1"
+  find "$dir" -maxdepth 1 -type f \
+    ! -name ".DS_Store" \
+    ! -name ".localized" \
+    ! -name ".gitkeep" \
+    -print 2>/dev/null | wc -l | tr -d ' '
+}
+
+collect_volume_chunks() {
+  local dir="$1"
+  find "$dir" -maxdepth 1 -type f -name '*@*of*' -print 2>/dev/null | LC_ALL=C sort
+}
+
+is_split_volume_dir() {
+  local dir="$1"
+  [[ -d "$dir" ]] || return 1
+  local count="0"
+  count="$(collect_volume_chunks "$dir" | wc -l | tr -d ' ')"
+  [[ "$count" -gt 1 ]]
+}
+
+infer_original_name_from_volume_dir() {
+  local dir="$1"
+  local first_chunk=""
+  first_chunk="$(collect_volume_chunks "$dir" | head -n 1)"
+  [[ -n "$first_chunk" ]] || return 1
+  local first_name="$(basename "$first_chunk")"
+  local original_name="${first_name%%@*}"
+  [[ -n "$original_name" ]] || return 1
+  print -r -- "$original_name"
+}
+
+account_has_supported_source() {
+  local account_dir="$1"
+  local raw_codex_dir="${account_dir}/.codex"
+  local zip_file="${account_dir}/.codex.zip"
+
+  if [[ -d "$raw_codex_dir" && "$(count_immediate_effective_files "$raw_codex_dir")" -gt 1 && -n "$(collect_volume_chunks "$raw_codex_dir" | head -n 1)" ]]; then
+    return 0
+  fi
+
+  if [[ "$(count_immediate_effective_files "$account_dir")" -gt 1 && -n "$(collect_volume_chunks "$account_dir" | head -n 1)" ]]; then
+    return 0
+  fi
+
+  if [[ -f "$zip_file" && -s "$zip_file" ]]; then
+    return 0
+  fi
+
+  if source_codex_has_effective_content "$raw_codex_dir"; then
+    return 0
+  fi
+
+  return 1
+}
+
+explain_expected_source_layout() {
+  cat <<'EOF' | tee -a "$LOG_FILE"
+支持的来源格式：
+  1. codex配置文件夹/账户名/.codex/                 # 原始配置目录
+  2. codex配置文件夹/账户名/.codex.zip             # 单个压缩包
+  3. codex配置文件夹/账户名/.codex/.codex.zip@001of003 ... # 拆分子卷目录
+  4. codex配置文件夹/账户名/.codex.zip@001of003 ...        # 子卷直接放账户目录
+EOF
+}
+
+wait_until_account_source_ready() {
+  local account_dir="$1"
+  local account_name="$(basename "$account_dir")"
 
   while true; do
-    if [[ ! -d "$source_dir" ]]; then
-      error_echo "选中的 .codex 目录不存在：${source_dir}"
-      warn_echo "请按 codex配置文件夹/${account_name}/.codex 修正目录结构。"
-      /usr/bin/open "$parent_dir" >/dev/null 2>&1 || /usr/bin/open "$CONFIGS_DIR" >/dev/null 2>&1 || true
-    elif source_codex_has_effective_content "$source_dir"; then
-      success_echo "来源 .codex 自检通过：${source_dir}"
+    if [[ ! -d "$account_dir" ]]; then
+      error_echo "选中的账户目录不存在：${account_dir}"
+      warn_echo "请在 codex配置文件夹 下修正账户目录。"
+      /usr/bin/open "$CONFIGS_DIR" >/dev/null 2>&1 || true
+    elif ! has_effective_entry "$account_dir"; then
+      warn_echo "账户配置目录为空，禁止继续：${account_dir}"
+      warm_echo "请放入原始 .codex、.codex.zip 或拆分子卷，再回到终端按回车复检。"
+      /usr/bin/open "$account_dir" >/dev/null 2>&1 || true
+    elif account_has_supported_source "$account_dir"; then
+      success_echo "来源账户目录自检通过：${account_name}"
       return 0
     else
-      warn_echo "来源 .codex 是空目录，禁止注入：${source_dir}"
-      warm_echo "请先把真实 Codex 配置放进这个 .codex，再回到终端按回车复检。"
-      /usr/bin/open "$source_dir" >/dev/null 2>&1 || true
+      error_echo "账户目录非空，但没有识别到可注入的 Codex 配置：${account_dir}"
+      explain_expected_source_layout
+      /usr/bin/open "$account_dir" >/dev/null 2>&1 || true
     fi
 
     echo ""
@@ -329,25 +435,25 @@ wait_until_source_codex_ready() {
   done
 }
 
-build_source_choice_file() {
+build_account_choice_file() {
   local choice_file="$1"
   : > "$choice_file"
 
-  find "$CONFIGS_DIR" -mindepth 2 -maxdepth 2 -type d -name ".codex" -print0 | while IFS= read -r -d '' codex_dir; do
-    local parent_name="$(basename "$(dirname "$codex_dir")")"
-    print -r -- "${parent_name}\t${codex_dir}" >> "$choice_file"
+  find "$CONFIGS_DIR" -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d '' account_dir; do
+    local account_name="$(basename "$account_dir")"
+    print -r -- "${account_name}\t${account_dir}" >> "$choice_file"
   done
 }
 
-select_source_codex_dir() {
+select_source_account_dir() {
   local choice_file=""
-  choice_file="$(mktemp "/tmp/codex_choices.XXXXXX")"
+  choice_file="$(mktemp "/tmp/codex_accounts.XXXXXX")"
 
   while true; do
-    build_source_choice_file "$choice_file"
+    build_account_choice_file "$choice_file"
 
     if [[ ! -s "$choice_file" ]]; then
-      warn_echo "没有发现可注入的 .codex 目录。请按：codex配置文件夹/账户名/.codex 放置配置。"
+      warn_echo "没有发现账户配置目录。请按：codex配置文件夹/账户名 放置配置。"
       /usr/bin/open "$CONFIGS_DIR" >/dev/null 2>&1 || true
       local answer=""
       read -r "?👉 修正目录结构后按回车重新扫描；按 Ctrl+C 取消：" answer
@@ -355,20 +461,187 @@ select_source_codex_dir() {
     fi
 
     local selected=""
-    selected="$(cat "$choice_file" | fzf --height=60% --border --prompt="请选择要注入的 .codex 配置：" --delimiter=$'\t' --with-nth=1)"
+    selected="$(cat "$choice_file" | fzf --height=60% --border --prompt="请选择要注入的 Codex 账户配置：" --delimiter=$'\t' --with-nth=1)"
 
     if [[ -z "$selected" ]]; then
       rm -f "$choice_file"
-      error_echo "未选择任何 .codex 配置，已取消。"
+      error_echo "未选择任何 Codex 账户配置，已取消。"
       exit 1
     fi
 
-    local source_dir="$(print -r -- "$selected" | awk -F '\t' '{print $2}')"
-    wait_until_source_codex_ready "$source_dir"
+    local account_dir="$(print -r -- "$selected" | awk -F '\t' '{print $2}')"
+    wait_until_account_source_ready "$account_dir"
     rm -f "$choice_file"
-    SOURCE_CODEX_DIR="$source_dir"
+    SOURCE_ACCOUNT_DIR="$account_dir"
+    SOURCE_ACCOUNT_NAME="$(basename "$account_dir")"
     return 0
   done
+}
+
+merge_split_volumes_fallback() {
+  local volume_dir="$1"
+  local output_dir="$2"
+  local original_name=""
+  original_name="$(infer_original_name_from_volume_dir "$volume_dir")" || return 1
+  local output_file="${output_dir}/${original_name}"
+
+  : > "$output_file"
+  local chunk=""
+  while IFS= read -r chunk; do
+    if ! /bin/cat "$chunk" >> "$output_file"; then
+      rm -f "$output_file"
+      return 1
+    fi
+  done < <(collect_volume_chunks "$volume_dir")
+
+  print -r -- "$output_file"
+}
+
+merge_split_volumes_to_zip() {
+  local volume_dir="$1"
+  local work_dir="$2"
+  local merge_output_dir="${work_dir}/merge_output"
+  mkdir -p "$merge_output_dir"
+
+  local original_name=""
+  original_name="$(infer_original_name_from_volume_dir "$volume_dir")" || {
+    error_echo "无法从子卷文件名推断源文件名：${volume_dir}"
+    return 1
+  }
+
+  info_echo "检测到拆分子卷，准备合并。"
+  gray_echo "子卷目录：${volume_dir}"
+  gray_echo "临时输出目录：${merge_output_dir}"
+  gray_echo "预期合并文件：${original_name}"
+
+  if [[ -f "$MERGE_HELPER_SCRIPT" ]]; then
+    chmod +x "$MERGE_HELPER_SCRIPT" >/dev/null 2>&1 || true
+    info_echo "调用子卷合并脚本的非交互入口。"
+    /bin/bash "$MERGE_HELPER_SCRIPT" --jobs-noninteractive "$volume_dir" "$merge_output_dir" 2>&1 | tee -a "$LOG_FILE"
+    local helper_status=${pipestatus[1]}
+    if [[ "$helper_status" -ne 0 ]]; then
+      error_echo "子卷合并脚本执行失败，禁止继续注入。"
+      return 1
+    fi
+  else
+    warn_echo "子卷合并脚本不存在，改用内置兜底合并逻辑。"
+    merge_split_volumes_fallback "$volume_dir" "$merge_output_dir" >/dev/null || {
+      error_echo "内置兜底合并失败，禁止继续注入。"
+      return 1
+    }
+  fi
+
+  local merged_file="${merge_output_dir}/${original_name}"
+  if [[ ! -f "$merged_file" || ! -s "$merged_file" ]]; then
+    error_echo "合并结果不存在或为空：${merged_file}"
+    return 1
+  fi
+
+  if [[ "$merged_file" != *.zip ]]; then
+    error_echo "合并成功但结果不是 zip 文件：${merged_file}"
+    error_echo "当前流程只接受 .codex.zip 或其它 zip 子卷，禁止继续注入。"
+    return 1
+  fi
+
+  success_echo "子卷合并成功：${merged_file}"
+  MERGED_ZIP_FILE="$merged_file"
+  return 0
+}
+
+extract_codex_zip_to_dir() {
+  local zip_file="$1"
+  local work_dir="$2"
+  local raw_extract_dir="${work_dir}/zip_raw"
+  local normalized_root="${work_dir}/zip_normalized"
+  local normalized_codex_dir="${normalized_root}/.codex"
+
+  mkdir -p "$raw_extract_dir" "$normalized_root"
+  info_echo "开始解压 Codex 配置压缩包。"
+  gray_echo "压缩包：${zip_file}"
+  gray_echo "临时目录：${raw_extract_dir}"
+
+  if ! run_command /usr/bin/unzip -q "$zip_file" -d "$raw_extract_dir"; then
+    error_echo "解压失败，禁止继续注入：${zip_file}"
+    return 1
+  fi
+
+  if [[ -d "${raw_extract_dir}/.codex" ]]; then
+    if ! source_codex_has_effective_content "${raw_extract_dir}/.codex"; then
+      error_echo "解压得到的 .codex 是空目录，禁止继续注入。"
+      return 1
+    fi
+    success_echo "解压得到 .codex 目录：${raw_extract_dir}/.codex"
+    EXTRACTED_CODEX_DIR="${raw_extract_dir}/.codex"
+    return 0
+  fi
+
+  if ! has_effective_entry "$raw_extract_dir"; then
+    error_echo "解压结果为空，禁止继续注入：${zip_file}"
+    return 1
+  fi
+
+  mkdir -p "$normalized_codex_dir"
+  if ! run_command /usr/bin/ditto "$raw_extract_dir" "$normalized_codex_dir"; then
+    error_echo "标准化解压目录失败，禁止继续注入。"
+    return 1
+  fi
+
+  if ! source_codex_has_effective_content "$normalized_codex_dir"; then
+    error_echo "标准化后的 .codex 是空目录，禁止继续注入。"
+    return 1
+  fi
+
+  success_echo "已把解压内容标准化为 .codex 目录：${normalized_codex_dir}"
+  EXTRACTED_CODEX_DIR="$normalized_codex_dir"
+  return 0
+}
+
+prepare_source_codex_dir() {
+  local account_dir="$1"
+  local raw_codex_dir="${account_dir}/.codex"
+  local zip_file="${account_dir}/.codex.zip"
+  local temp_dir=""
+
+  if [[ -d "$raw_codex_dir" && "$(count_immediate_effective_files "$raw_codex_dir")" -gt 1 && -n "$(collect_volume_chunks "$raw_codex_dir" | head -n 1)" ]]; then
+    temp_dir="$(mktemp -d "/tmp/codex_inject_merge.XXXXXX")"
+    register_temp_dir "$temp_dir"
+    MERGED_ZIP_FILE=""
+    EXTRACTED_CODEX_DIR=""
+    merge_split_volumes_to_zip "$raw_codex_dir" "$temp_dir" || exit 1
+    extract_codex_zip_to_dir "$MERGED_ZIP_FILE" "$temp_dir" || exit 1
+    PREPARED_SOURCE_CODEX_DIR="$EXTRACTED_CODEX_DIR"
+    return 0
+  fi
+
+  if [[ "$(count_immediate_effective_files "$account_dir")" -gt 1 && -n "$(collect_volume_chunks "$account_dir" | head -n 1)" ]]; then
+    temp_dir="$(mktemp -d "/tmp/codex_inject_merge.XXXXXX")"
+    register_temp_dir "$temp_dir"
+    MERGED_ZIP_FILE=""
+    EXTRACTED_CODEX_DIR=""
+    merge_split_volumes_to_zip "$account_dir" "$temp_dir" || exit 1
+    extract_codex_zip_to_dir "$MERGED_ZIP_FILE" "$temp_dir" || exit 1
+    PREPARED_SOURCE_CODEX_DIR="$EXTRACTED_CODEX_DIR"
+    return 0
+  fi
+
+  if [[ -f "$zip_file" && -s "$zip_file" ]]; then
+    temp_dir="$(mktemp -d "/tmp/codex_inject_unzip.XXXXXX")"
+    register_temp_dir "$temp_dir"
+    EXTRACTED_CODEX_DIR=""
+    extract_codex_zip_to_dir "$zip_file" "$temp_dir" || exit 1
+    PREPARED_SOURCE_CODEX_DIR="$EXTRACTED_CODEX_DIR"
+    return 0
+  fi
+
+  if source_codex_has_effective_content "$raw_codex_dir"; then
+    PREPARED_SOURCE_CODEX_DIR="$raw_codex_dir"
+    success_echo "使用原始 .codex 目录直接注入：${PREPARED_SOURCE_CODEX_DIR}"
+    return 0
+  fi
+
+  error_echo "未能准备可注入的 .codex 来源：${account_dir}"
+  explain_expected_source_layout
+  exit 1
 }
 
 stop_codex_runtime() {
@@ -486,9 +759,15 @@ inject_codex_config() {
     exit 1
   fi
 
+  if ! source_codex_has_effective_content "$source_codex_dir"; then
+    error_echo "准备注入的 .codex 来源为空，禁止注入：${source_codex_dir}"
+    exit 1
+  fi
+
   stop_codex_runtime "替换前先停止 Codex，避免运行中写入配置。"
 
   info_echo "开始注入 .codex 配置。"
+  gray_echo "来源账户：${SOURCE_ACCOUNT_NAME}"
   gray_echo "来源：${source_codex_dir}"
   gray_echo "目标：${TARGET_CODEX_DIR}"
 
@@ -524,6 +803,7 @@ restart_codex_runtime() {
 print_finish_summary() {
   echo ""
   highlight_echo "============================== 执行完成 =============================="
+  success_echo "来源账户：${SOURCE_ACCOUNT_NAME}"
   success_echo "目标 .codex：${TARGET_CODEX_DIR}"
   success_echo "全局 AGENTS：${TARGET_CODEX_DIR}/AGENTS.md"
   gray_echo "日志文件：${LOG_FILE}"
@@ -537,11 +817,13 @@ main() {
   ensure_fzf
   ensure_codex
 
-  select_source_codex_dir
-  note_echo "已选择配置：${SOURCE_CODEX_DIR}"
+  select_source_account_dir
+  note_echo "已选择账户配置：${SOURCE_ACCOUNT_NAME}"
+  prepare_source_codex_dir "$SOURCE_ACCOUNT_DIR"
+  note_echo "已准备注入来源：${PREPARED_SOURCE_CODEX_DIR}"
 
   prepare_clean_target
-  inject_codex_config "$SOURCE_CODEX_DIR"
+  inject_codex_config "$PREPARED_SOURCE_CODEX_DIR"
   restart_codex_runtime
   print_finish_summary
 }
