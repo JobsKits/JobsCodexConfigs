@@ -12,11 +12,11 @@
 
 ## 一、适用场景 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-- 你有多个 [**Codex**](https://openai.com/codex) 账户配置，需要一键切换当前机器的 `~/.codex`。
-- 你希望每次切换后，都用工具包根目录的全局唯一 `AGENTS.md` 覆盖目标配置里的 `AGENTS.md`。
-- 你希望已有 `~/.codex` 不被静默覆盖，而是先手动处理或压缩备份。
-- 你希望来源配置必须是真实内容，不能把空目录、空压缩包或合并失败的子卷误注入到当前账户。
-- 你希望把体积较大的 `.codex` 压缩并拆成 GitHub 友好的子卷后，注入脚本仍能自动临时合并、解压、注入。
+- 有多个 [**Codex**](https://openai.com/codex) 账户配置，需要一键切换当前机器的 `~/.codex`
+- 期望每次切换后，都用工具包根目录的全局唯一 `AGENTS.md` 覆盖目标配置里的 `AGENTS.md`
+- 期望已有 `~/.codex` 不被静默覆盖，而是先手动处理或压缩备份
+- 期望来源配置必须是真实内容，不能把空目录、空压缩包或合并失败的子卷误注入到当前账户
+- 期望把体积较大的 `.codex` 压缩并拆成 对[**Github**](https://github.com) 友好的子卷后，注入脚本仍能自动临时合并、解压、注入
 
 ## 二、目录放置规则 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
@@ -60,21 +60,21 @@
 
 ## 三、执行前检查 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-- 脚本会检查 [**Homebrew**](https://brew.sh/)。
+- 脚本会检查 [**Homebrew**](https://brew.sh/)
 
   | 状态 | 处理方式 |
   | ---- | -------- |
   | 已安装 | 询问是否执行 `brew update && brew upgrade && brew cleanup && brew doctor && brew -v`。 |
   | 未安装 | 询问是否安装 [**Homebrew**](https://brew.sh/)；跳过则终止。 |
 
-- 脚本会检查 [**fzf**](https://formulae.brew.sh/formula/fzf)。
+- 脚本会检查 [**fzf**](https://formulae.brew.sh/formula/fzf)
 
   | 状态 | 处理方式 |
   | ---- | -------- |
   | 已安装 | 直接进入配置选择。 |
   | 未安装 | 询问是否执行 `brew install fzf`；跳过则终止。 |
 
-- 脚本会检查 [**Codex**](https://openai.com/codex) 的两个 cask。
+- 脚本会检查 [**Codex**](https://openai.com/codex) 的两个 cask
 
   ```shell
   brew install --cask codex-app
@@ -86,7 +86,7 @@
   | 已安装 | 询问是否执行 [**Codex**](https://openai.com/codex) 自检与升级。 |
   | 缺失任一 cask | 询问是否安装缺失项；跳过则终止。 |
 
-- 脚本会检查来源账户目录是否有效。
+- 脚本会检查来源账户目录是否有效
 
   | 状态 | 处理方式 |
   | ---- | -------- |
@@ -134,9 +134,9 @@
   【MacOS】文件分拆（合并）command/【MacOS】🧩子卷➤合而为一源文件.command
   ```
 
-- 子卷合并成功后，脚本会校验合并结果必须是非空 `zip` 文件；合并失败、结果为空、结果不是 `zip`，都会立即报错并停止，不会进入注入流程。
-- 如果来源是 `.codex.zip`，脚本会解压到 `/tmp/codex_inject_unzip.XXXXXX` 临时目录；解压失败或解压后为空，会立即停止。
-- 临时目录只服务本次任务，脚本结束、失败或被中断时会自动删除。
+- 子卷合并成功后，脚本会校验合并结果必须是非空 `zip` 文件；合并失败、结果为空、结果不是 `zip`，都会立即报错并停止，不会进入注入流程
+- 如果来源是 `.codex.zip`，脚本会解压到 `/tmp/codex_inject_unzip.XXXXXX` 临时目录；解压失败或解压后为空，会立即停止
+- 临时目录只服务本次任务，脚本结束、失败或被中断时会自动删除
 - 如果目标 `~/.codex` 已存在，会出现 [**fzf**](https://formulae.brew.sh/formula/fzf) 菜单：
 
   | 选项 | 行为 |
@@ -145,9 +145,9 @@
   | `压缩备份处理` | 把原 `~/.codex` 压缩为 `~/.codex@YYYY.MM.DD HH：MM：SS.zip`，然后要求输入 `YES` 删除原目录，以创建干净注入环境。 |
   | `取消执行` | 退出脚本，不改动配置。 |
 
-- 只有当目标目录下不存在 `.codex` 时，脚本才会继续注入。
-- 注入后会用工具包根目录的 `AGENTS.md` 覆盖目标 `~/.codex/AGENTS.md`。
-- 替换完成后会强制停止 [**Codex**](https://openai.com/codex) 进程，并尝试执行 `open -a Codex` 重启。
+- 只有当目标目录下不存在 `.codex` 时，脚本才会继续注入
+- 注入后会用工具包根目录的 `AGENTS.md` 覆盖目标 `~/.codex/AGENTS.md`
+- 替换完成后会强制停止 [**Codex**](https://openai.com/codex) 进程，并尝试执行 `open -a Codex` 重启
 
 ## 六、流程图 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
