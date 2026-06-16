@@ -26,6 +26,7 @@
 
 - `💻JobsCodexConfigs/AGENTS.md` 是全局指导源文件；启动注入脚本后，脚本会把它部署到 `~/.codex/AGENTS.md`。
 - `💻JobsCodexConfigs/skills/` 是用户级 Skills 源目录；启动注入脚本后，脚本会把其中每个技能目录部署到 `$HOME/.agents/skills/技能名/`。
+- `/Users/jobs/Documents/Github/JobsConfigOS/💻JobsCodexConfigs` 是 Jobs 本地 Codex 公约文件的备份源目录，里面的 `AGENTS.md` 和 `skills/` 分别对应运行态的 `/Users/jobs/.codex/AGENTS.md` 和 `/Users/jobs/.agents/skills/`。
 - 维护本仓库时坚持单向部署：只允许从 `💻JobsCodexConfigs` 写入 MacOS 当前用户的固定目标位置；不要把系统里的 `~/.codex/AGENTS.md`、`$HOME/.agents/skills` 或其它运行态文件回写到本仓库。
 - 如果用户要求更新专项规则，优先更新对应 `skills/<skill-name>/SKILL.md`；只有长期全局行为才写入本 `AGENTS.md`。
 - `~/.codex/AGENTS.md` 是全局指导文件位置，不是 Skills 主目录；Skills 的用户级位置是 `$HOME/.agents/skills`，仓库级位置是项目里的 `.agents/skills`。
@@ -37,8 +38,8 @@
 - `jobs-git-repository`：Git 仓库结构、JobsMacEnvVarConfigs、安装与升级入口规则。
 - `jobs-markdown-docs`：Markdown、README、技术文档、流程图、表格、外链。
 - `jobs-podspec`：CocoaPods、Podspec、source、资源、依赖、xcconfig。
-- `jobs-objective-c-pods`：Objective-C、本地 Pods、Core/Support、头文件、JobsOCDSL、JobsMake。
-- `jobs-swift`：Swift 文件基座、懒加载、SnapKit、导航栏、控制器组织。
+- `jobs-objective-c-pods`：Objective-C、本地 Pods、Core/Support、头文件、JobsOCDSL、JobsModelDSL、JobsBlock、JobsMake、点语法链式调用。
+- `jobs-swift`：Swift 文件基座、JobsSwiftDSL、点语法链式调用、懒加载、SnapKit、导航栏、控制器组织。
 - `jobs-python`：Python 脚本、命令行、日志、异常、依赖与测试。
 - `jobs-dart-flutter`：Dart / Flutter 页面、状态、路由、资源、打包与代码生成。
 
@@ -47,5 +48,13 @@
 - 命中某个任务类型时，优先加载对应 Skill 的完整规则；不要把所有专项规范一次性塞回本全局文件。
 - 多领域任务可以组合多个 Skill，例如整理 `.command` 并写 README 时，同时参考 `jobs-macos-shell` 和 `jobs-markdown-docs`。
 - Skill 内规则与本文件冲突时，本文件只管全局边界，具体工程实践以对应 Skill 为准。
+- 涉及 OC / Swift 的 DSL、点语法、链式语法、`byXxx` 命名、Apple API 封装或 Jobs 自建 Model 封装时，分别加载 `jobs-objective-c-pods` / `jobs-swift`；两侧公约以“同一 DSL 思想、不同语言实现”为准。
+- DSL 链式方法必须返回可继续链下去的对象；除明确的终止动作外，不写只执行副作用却返回 `void` 的 DSL。返回类型要尽量保持当前主对象类型，避免链条中途降级到父类后丢失子类点语法。
+
+## 五、固定项目路径
+
+- Swift 侧 iOS 项目：`/Users/jobs/Documents/Github/JobsBaseConfig/JobsBaseConfig@JobsSwiftBaseConfigDemo`。
+- OC 侧新项目：`/Users/jobs/Documents/Github/JobsOCBaseConfigDemo@ByPods`。
+- OC 侧老项目：`/Users/jobs/Documents/Github/JobsBaseConfig/JobsBaseConfig@JobsOCBaseConfigDemo`。
 
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>

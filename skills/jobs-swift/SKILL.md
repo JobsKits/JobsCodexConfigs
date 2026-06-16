@@ -1,6 +1,6 @@
 ---
 name: jobs-swift
-description: 当任务涉及 Swift、Swift 文件组织、懒加载、SnapKit、导航栏配置、控制器组织或 Swift return self 收口时使用。
+description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语法链式调用、懒加载、SnapKit、导航栏配置、控制器组织或 Swift return self 收口时使用。
 ---
 
 # Jobs Swift 写作规范
@@ -8,6 +8,18 @@ description: 当任务涉及 Swift、Swift 文件组织、懒加载、SnapKit、
 > 本技能由 `💻JobsCodexConfigs/AGENTS.md` 拆分而来，保留原有 Jobs 工作规范。只有当前任务命中本技能描述时才加载本文件，避免把所有细则长期塞进全局上下文。
 
 ## 七、[**Swift**](https://www.swift.org/) 写作规范 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+### 7.0、Jobs DSL 总体思想
+
+- Jobs 的 Swift / OC DSL 本质是一套命名和调用思想：用点语法 + 链式语法让对象从创建、配置、事件、装配到布局尽量一路设置下去，减少散落赋值和割裂的中间变量。
+- Swift 侧 DSL 命名与 OC 侧保持同源：统一使用 `by` + 首字母大写的属性名、单参数方法名或一个参数语义名。例如 `text` 对应 `byText(...)`，`font` 对应 `byFont(...)`，`backgroundColor` 对应 `byBgColor(...)` 或项目已有语义别名。
+- 遇到 `Bool` 属性且系统名以 `is` 开头时，DSL 名省略 `is`，例如 `isSelected` 写成 `bySelected(...)`，`isEnabled` 写成 `byEnabled(...)`，保持 Swift / OC 两侧命名平行。
+- DSL 覆盖范围不只限于 Apple 原生 API。Jobs 自建 Model、配置对象、业务基础对象也要按同一套思路封装；Swift 侧新增模型 DSL 时，应优先对齐 OC 侧 `JobsModelDSL` 的语义命名和调用方式。
+- Swift 虽然不需要像 OC 一样集中定义大量 Block typedef，但闭包参数命名、返回 `Self`、`@discardableResult` 和链式收口要保持稳定，让调用方可以一路点下去。除明确的终止动作外，Swift DSL 不写只执行副作用却返回 `Void` 的方法；优先返回 `Self` 或当前主对象类型，避免链条中途断掉。
+- Swift / OC 两侧面对同一个 Apple API 或同一个 Jobs 自建模型语义时，应尽量保持 DSL 名称、参数语义、调用顺序平行；发现一侧缺失时，优先补齐缺失侧，而不是在业务代码里回退到裸赋值。
+- 对“中心对象”配置时，优先围绕一个主接收者一路链式调用。需要配置子对象时，优先提供 `byXxxBlock(...)`、`byXxx { ... }` 或项目既有闭包入口，让闭包内部配置子对象后继续返回主对象，避免主链被 `object.child.xxx` 打断。
+- “一链到底”是 Jobs DSL 改造的终结标准：在一个 lazy 初始化闭包、创建闭包或配置闭包里，主对象变量名应尽量只作为链式起点出现一次，例如 `label.byText(...).byFont(...).byAddTo(...)`；后续不再散落 `label.xxx = ...`、`label.method(...)` 或第二段 `label.byXxx(...)`。
+- 当一条链中先调用父类 DSL 会导致返回类型降级时，必须先完成当前类本层 DSL，再进入父类 DSL；如果后续仍需要回到子类能力，应补充能返回 `Self` / 主对象的 DSL，而不是拆成第二个接收者调用。
 
 ### 7.1、文件基座与依赖导入
 

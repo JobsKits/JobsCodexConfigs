@@ -1,6 +1,6 @@
 ---
 name: jobs-objective-c-pods
-description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文件引用、Pod 拆分、JobsDefineProperty、JobsOCDSL、JobsMake、import 排序或 Xcode Markdown 引用时使用。
+description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文件引用、Pod 拆分、JobsDefineProperty、JobsOCDSL、JobsModelDSL、JobsBlock、JobsMake、import 排序或 Xcode Markdown 引用时使用。
 ---
 
 # Jobs Objective-C 与本地 Pods 工程规范
@@ -152,6 +152,24 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 
   @end
   ```
+
+### 6.8.0、Jobs DSL 总体思想
+
+- Jobs 的 OC / Swift DSL 本质是一套命名和调用思想：用点语法 + 链式语法让对象从创建、配置、事件、装配到布局尽量一路设置下去，减少散落赋值和割裂的中间变量。
+- DSL 命名统一使用 `by` + 首字母大写的属性名、单参数方法名或一个参数语义名。例如 `text` 对应 `byText(...)`，`font` 对应 `byFont(...)`，`addSubview:` 这类动作可按既有封装写成 `addOn(...)` / `byAddTo(...)` 等项目内统一语义。
+- 遇到 `BOOL` 属性且系统名以 `is` 开头时，DSL 名省略 `is`，例如 `isSelected` 写成 `bySelected(...)`，`isEnabled` 写成 `byEnabled(...)`，保持 Swift / OC 两侧命名平行。
+- DSL 覆盖范围不只限于 Apple 原生 API。Jobs 自建 Model、配置对象、业务基础对象也要按同一套思路封装；OC 侧重点体现在 `JobsModel` 的 `JobsModelDSL`，例如 `UIViewModel`、`UITextModel`、`UIButtonModel` 等大 Model / 子 Model 都应支持链式配置。
+- OC 因为 Block 类型繁多，所有可复用 Block typedef 必须集中放入 `JobsBlock` 管理；新增 DSL 前先查 `JobsBlock` 是否已有可复用类型，缺失再补到合适的 `JobsBlock.h`、`ReturnByCertainParametersBlock.h` 或其它既有分类头里，不在 DSL 头文件里私自散落 typedef。
+- `JobsBlock` 是全局 Block 服务，不只服务 DSL。整理 `JobsBlock` / `ReturnByCertainParametersBlock.h` 时，优先按返回值相同归为一组，同组第一行用 `/// 返回类型` 标注；`#pragma mark ——` 只写大类名，不写 `DSL` 字样。遇到外源 Pod 的 Block 定义，大类名写 Pod 名，例如 `#pragma mark —— ReactiveObjC`，再用 `/// RACSignal`、`/// RACDisposable` 这类返回值标注细分。
+- 判断 Block 是否重复时，只看返回类型和入参类型；如果两个 typedef 的返回类型和入参类型完全一致，只是 Block 名不同，它们就是同一个 Block。新增调用优先复用现有 typedef；历史兼容名需要保留时，用 `typedef 已有Block名 兼容Block名;` 做别名，不再重复写一遍 `(^BlockName)(...)` 签名。
+- `JobsBlock` 里的 Block 类型命名一律把 `Return` 缩写成 `Ret`，例如 `JobsReturnIDByAppLanguageBlock` 必须改成 `JobsRetIDByAppLanguageBlock`。修改 typedef 名后必须全局搜索并同步替换所有调用、属性、方法签名和文档引用；不要只改 `JobsBlock.h`。
+- 默认不要新定义 Block。确实缺失时，先全局查 `JobsBlock` 现有类型和别名，确认没有同签名可复用项后，再补到对应返回值分组下，并同步检查公开头 import、podspec 依赖和 README。
+- 新增 OC DSL 时要同时考虑公开头、podspec 依赖、README 和调用方 import 边界；`JobsOCDSL` / `JobsModelDSL` 负责链式分类，`JobsBlock` 负责 Block 类型，`JobsMake` 负责创建入口，职责不能混写。
+- OC 链式 DSL 的 Block 必须返回可继续链下去的对象；除明确的终止动作外，不写只执行副作用却返回 `void` 的 DSL。Block typedef 优先返回 `__kindof 当前类 * _Nullable` 或主对象类型，方法实现里设置完属性后必须 `return self;`，否则点语法链会在这一节断掉。
+- OC / Swift 两侧面对同一个 Apple API 或同一个 Jobs 自建模型语义时，应尽量保持 DSL 名称、参数语义、调用顺序平行；发现一侧缺失时，优先补齐缺失侧，而不是在业务代码里回退到裸赋值。
+- 对“中心对象”配置时，优先围绕一个主接收者一路链式调用。需要配置子对象时，优先提供 `byXxxBlock(...)` 这类回调 DSL，让回调内部配置子对象后继续返回主对象，避免主链被 `object.child.xxx` 打断。
+- “一链到底”是 Jobs DSL 改造的终结标准：在一个 `jobsMakeXxx`、懒加载 getter 或配置闭包里，主对象变量名应尽量只作为链式起点出现一次，例如 `label.byText(...).byFont(...).addOn(...).byTop(...)`；后续不再散落 `label.xxx = ...`、`label.method(...)` 或第二段 `label.byXxx(...)`。
+- 当一条链中先调用父类 DSL 会导致返回类型降级时，必须先完成当前类本层 DSL，再进入父类 DSL；如果后续仍需要回到子类能力，应补充能返回主对象的 block DSL 或当前层 DSL，而不是拆成第二个接收者调用。
 
 ### 6.8.1、`JobsOCDSL` 链式调用顺序
 
