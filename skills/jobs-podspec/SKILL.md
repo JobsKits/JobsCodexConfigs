@@ -123,6 +123,13 @@ description: 当任务涉及 CocoaPods、Podspec、source_files、public_header_
 
 - 修改 podspec 后要重点检查：`spec.name` 是否和文件名一致、入口头是否真实存在、`Core` / `Support` glob 是否命中、依赖是否形成循环、资源是否被错误放进 `source_files`。
 
+### 5.6.1、`Podfile` / `Podfile.deps` 外部脚本防阻塞
+
+- `Podfile.deps` 只维护 `pod` 依赖定义，不直接执行外部脚本；需要挂载脚本时统一放在 `Podfile` 的 `pre_install`、`post_install` 或 `post_integrate` 中处理。
+- `Podfile` 里凡是调用外部脚本、`load` 外部 Ruby 文件、`.command`、`.sh`、`.rb` 或 `ScriptsByPods` 下的工具，都必须先判断文件是否存在。脚本不存在、`chmod +x` 失败或脚本执行失败时，默认只打印告警并 `return` / 跳过，不中断 `pod install` 主流程。
+- 只有用户明确要求某个脚本是强制门禁时，才允许用 `raise` 阻塞；否则依赖报告、CodeGraph、资源清理、Flutter/Unity 辅助脚本都按“可选增强，失败不阻塞”处理。
+- 新增脚本入口时优先封装统一 helper，例如 `jobs_run_external_script(...)` 或 `run_xxx_script`，不要在 Podfile 里散落裸 `system(script_path)`。
+
 
 ### 5.7、`JobsPodspecKit.rb` / 样例 `*.podspec` 蒸馏规则
 
