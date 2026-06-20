@@ -7,6 +7,7 @@ SCRIPT_BASENAME=$(basename "$0" | sed 's/\.[^.]*$//')
 LOG_FILE="/tmp/${SCRIPT_BASENAME}.log"
 : > "$LOG_FILE"
 
+# 解析并返回后续流程需要的目标信息。
 resolve_toolkit_dir() {
   # 脚本推荐位于：💻JobsCodexConfigs/【MacOS】Codex配置注入替换工具.command/脚本文件
   # 因此需要从脚本所在目录向上查找真正的 💻JobsCodexConfigs 根目录。
@@ -36,21 +37,36 @@ BREW_BIN=""
 TEMP_WORK_DIRS=()
 DEPLOYED_SKILL_NAMES=()
 
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 log()            { echo -e "$1" | tee -a "$LOG_FILE"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 color_echo()     { log "\033[1;32m$1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 info_echo()      { log "\033[1;34mℹ $1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 success_echo()   { log "\033[1;32m✔ $1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 warn_echo()      { log "\033[1;33m⚠ $1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 warm_echo()      { log "\033[1;33m$1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 note_echo()      { log "\033[1;35m➤ $1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 error_echo()     { log "\033[1;31m✖ $1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 err_echo()       { log "\033[1;31m$1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 debug_echo()     { log "\033[1;35m🐞 $1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 highlight_echo() { log "\033[1;36m🔹 $1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 gray_echo()      { log "\033[0;90m$1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 bold_echo()      { log "\033[1m$1\033[0m"; }
+# 按当前输出级别记录终端信息，并同步写入脚本日志。
 underline_echo() { log "\033[4m$1\033[0m"; }
 
+# 执行已经拆分完成的独立业务步骤。
 run_command() {
   info_echo "执行：$*"
   "$@" 2>&1 | tee -a "$LOG_FILE"
@@ -61,11 +77,13 @@ run_command() {
   return "$exit_code"
 }
 
+# 封装 register_temp_dir 对应的独立处理逻辑。
 register_temp_dir() {
   local dir="$1"
   [[ -n "$dir" && -d "$dir" ]] && TEMP_WORK_DIRS+=("$dir")
 }
 
+# 执行对应的清理操作，并保留必要的安全检查。
 cleanup_temp_dirs() {
   local dir=""
   for dir in "${TEMP_WORK_DIRS[@]}"; do
@@ -77,6 +95,7 @@ cleanup_temp_dirs() {
 
 trap cleanup_temp_dirs EXIT INT TERM
 
+# 展示脚本用途和影响范围，并在执行前等待用户确认。
 show_readme_and_wait() {
   local readme_path="${SCRIPT_DIR}/README.md"
   if [[ ! -f "$readme_path" && -f "${TOOLKIT_DIR}/README.md" ]]; then
@@ -96,6 +115,7 @@ show_readme_and_wait() {
   read -r "?👉 已阅读自述文件，按回车继续执行；按 Ctrl+C 取消：" answer
 }
 
+# 收集并校验用户输入，决定后续执行路径。
 ask_any_to_run() {
   local message="$1"
   local answer=""
@@ -103,10 +123,12 @@ ask_any_to_run() {
   [[ -n "$answer" ]]
 }
 
+# 解析并返回后续流程需要的目标信息。
 get_cpu_arch() {
   [[ "$(uname -m)" == "arm64" ]] && echo "arm64" || echo "x86_64"
 }
 
+# 解析并返回后续流程需要的目标信息。
 find_first_app_path() {
   # 按 MacOS 固定应用目录查找图形化 App。
   local app_path=""
@@ -119,6 +141,7 @@ find_first_app_path() {
   return 1
 }
 
+# 解析并返回后续流程需要的目标信息。
 find_brew_path() {
   if command -v brew >/dev/null 2>&1; then
     command -v brew
@@ -138,6 +161,7 @@ find_brew_path() {
   return 1
 }
 
+# 检查当前运行条件是否满足后续流程要求。
 ensure_homebrew_shellenv() {
   local brew_path="$1"
   local shellenv_cmd=""
@@ -166,6 +190,7 @@ ensure_homebrew_shellenv() {
   fi
 }
 
+# 执行对应的环境配置或同步处理。
 install_homebrew() {
   warn_echo "未检测到 Homebrew。"
   if ! ask_any_to_run "是否安装 Homebrew"; then
@@ -191,6 +216,7 @@ install_homebrew() {
   rm -f "$installer_path"
 }
 
+# 检查当前运行条件是否满足后续流程要求。
 ensure_homebrew() {
   local arch="$(get_cpu_arch)"
   info_echo "当前芯片架构：${arch}"
@@ -218,6 +244,7 @@ ensure_homebrew() {
   fi
 }
 
+# 检查当前运行条件是否满足后续流程要求。
 check_fzf_health() {
   # fzf 是 Codex++ 启动选择的交互基础，这里做一次轻量健康体检。
   local fzf_path=""
@@ -246,6 +273,7 @@ check_fzf_health() {
   return 0
 }
 
+# 检查当前运行条件是否满足后续流程要求。
 ensure_fzf() {
   if command -v fzf >/dev/null 2>&1; then
     check_fzf_health || exit 1
@@ -265,11 +293,13 @@ ensure_fzf() {
   }
 }
 
+# 检查当前运行条件是否满足后续流程要求。
 is_cask_installed() {
   local cask_name="$1"
   "$BREW_BIN" list --cask "$cask_name" >/dev/null 2>&1
 }
 
+# 检查当前运行条件是否满足后续流程要求。
 ensure_codex() {
   # Codex 可能来自 Homebrew Cask，也可能是手动安装的 /Applications/Codex.app；这里以实际可启动入口为准。
   local required_casks=(codex-app codex)
@@ -340,6 +370,7 @@ ensure_codex() {
   fi
 }
 
+# 检查当前运行条件是否满足后续流程要求。
 validate_toolkit_layout() {
   if [[ ! -f "$GLOBAL_AGENTS_PATH" ]]; then
     error_echo "未找到全局 AGENTS.md：${GLOBAL_AGENTS_PATH}"
@@ -368,6 +399,7 @@ validate_toolkit_layout() {
   gray_echo "目标 Skills：${TARGET_SKILLS_DIR}"
 }
 
+# 封装 stop_codex_runtime 对应的独立处理逻辑。
 stop_codex_runtime() {
   local message="$1"
   info_echo "$message"
@@ -406,6 +438,7 @@ stop_codex_runtime() {
   success_echo "Codex 运行态已停止。"
 }
 
+# 封装 deploy_global_agents 对应的独立处理逻辑。
 deploy_global_agents() {
   # 单向部署本仓库 AGENTS.md 到 Codex 全局指导文件位置。
   # 这里不替换整个 ~/.codex，只创建目录并覆盖 AGENTS.md。
@@ -439,6 +472,7 @@ deploy_global_agents() {
   success_echo "全局 AGENTS.md 部署完成。"
 }
 
+# 封装 deploy_user_skills 对应的独立处理逻辑。
 deploy_user_skills() {
   # 单向部署本仓库 skills 到 Codex 用户级 Skills 目录；不从系统位置回写到仓库。
   if [[ ! -d "$SKILLS_SOURCE_DIR" ]]; then
@@ -504,6 +538,7 @@ deploy_user_skills() {
 }
 
 
+# 封装 toml_escape_string 对应的独立处理逻辑。
 toml_escape_string() {
   local value="$1"
   value="${value//\\/\\\\}"
@@ -511,6 +546,7 @@ toml_escape_string() {
   print -r -- "$value"
 }
 
+# 执行对应的环境配置或同步处理。
 update_codex_skills_config() {
   # Codex 官方会扫描 $HOME/.agents/skills；Codex++ 管理器的 Skills 页签通常读取 ~/.codex/config.toml 中的 [[skills.config]] 条目。
   # 因此这里在不回写仓库、不替换整个 ~/.codex 的前提下，追加一个受控配置块，让 Codex++ 管理器也能看到这些 Jobs Skills。
@@ -574,6 +610,7 @@ update_codex_skills_config() {
   success_echo "已更新 Codex Skills 配置：${TARGET_CODEX_CONFIG}"
 }
 
+# 封装 open_app_target 对应的独立处理逻辑。
 open_app_target() {
   # 优先按完整 .app 路径启动；路径不存在时按应用名兜底。
   local app_target="$1"
@@ -586,6 +623,7 @@ open_app_target() {
   /usr/bin/open "$app_target"
 }
 
+# 封装 build_codex_launcher_choice_file 对应的独立处理逻辑。
 build_codex_launcher_choice_file() {
   # Codex++ 存在时，让用户通过 fzf 选择增强入口或官方入口。
   local choice_file="$1"
@@ -614,6 +652,7 @@ build_codex_launcher_choice_file() {
   fi
 }
 
+# 封装 restart_codex_runtime 对应的独立处理逻辑。
 restart_codex_runtime() {
   stop_codex_runtime "部署完成后准备重启 Codex。"
 
@@ -665,6 +704,7 @@ restart_codex_runtime() {
   fi
 }
 
+# 封装 print_finish_summary 对应的独立处理逻辑。
 print_finish_summary() {
   echo ""
   highlight_echo "============================== 执行完成 =============================="
@@ -678,7 +718,8 @@ print_finish_summary() {
   highlight_echo "======================================================================="
 }
 
-main() {
+# 编排完整业务流程，复杂步骤继续下沉到职责明确的函数。
+run_main_flow() {
   show_readme_and_wait
   validate_toolkit_layout
   ensure_homebrew
@@ -691,6 +732,12 @@ main() {
   update_codex_skills_config
   restart_codex_runtime
   print_finish_summary
+}
+
+# 统一收口脚本入口，仅委托已经拆分完成的业务流程。
+main() {
+  # 主入口只负责委托完整业务流程，复杂逻辑统一下沉。
+  run_main_flow "$@"
 }
 
 main "$@"

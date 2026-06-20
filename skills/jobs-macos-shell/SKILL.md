@@ -5,11 +5,19 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、Homebre
 
 # Jobs MacOS Shell 脚本规范
 
+![Jobs出品，必属精品](https://picsum.photos/1500/400)
+
+[toc]
+
+---
+
+## 🔥 <font id=前言>前言</font>
+
 > 本技能由 `💻JobsCodexConfigs/AGENTS.md` 拆分而来，保留原有 Jobs 工作规范。只有当前任务命中本技能描述时才加载本文件，避免把所有细则长期塞进全局上下文。
 
-## 二、MacOS Shell 脚本（`.sh` / `.command`） <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## 一、MacOS Shell 脚本（`.sh` / `.command`） <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-### 2.1、脚本基座
+### 1.1、脚本基座
 
 - 新写或升级脚本时，默认使用：
 
@@ -47,7 +55,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、Homebre
 - 涉及批量文件处理时，使用 `find ... -print0` + `while IFS= read -r -d ''`，路径必须全程加引号，兼容空格、中文、括号和特殊符号。
 - 涉及文本替换时，优先使用 `grep -Fq`；复杂替换可以使用 `perl`，避免脆弱的 `sed` 转义。
 
-### 2.2、彩色日志
+### 1.2、彩色日志
 
 - 新脚本默认带这一组函数；已有脚本按原风格补齐即可。
 
@@ -71,7 +79,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、Homebre
 - 终端输出和日志落盘必须同步，排查时能直接看 `/tmp/脚本名.log`。
 - 成功、警告、错误要有明确前缀。失败分支不要静默吞掉，至少输出失败命令或目标路径。
 
-### 2.3、交互约定
+### 1.3、交互约定
 
 - `.command` 双击脚本优先显示同目录 `README.md`，用户按回车后继续，`Ctrl+C` 取消。
 
@@ -131,7 +139,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、Homebre
   }
   ```
 
-### 2.4、[**Homebrew**](https://brew.sh/) / MacOS 环境
+### 1.4、[**Homebrew**](https://brew.sh/) / MacOS 环境
 
 - [**Homebrew**](https://brew.sh/) 相关脚本必须识别 Apple Silicon 和 Intel：
 
@@ -147,7 +155,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、Homebre
 - 已安装 [**Homebrew**](https://brew.sh/) 时，不自动执行 `brew update && brew upgrade && brew cleanup && brew doctor && brew -v`，必须询问用户。
 - 涉及 CLT、[**Xcode**](https://developer.apple.com/xcode/)、[**CocoaPods**](https://cocoapods.org/)、[**Flutter**](https://flutter.dev/)、[**Android Studio**](https://developer.android.com/studio?hl=zh-c)、[**Java**](https://www.java.com/)、[**Ruby**](https://www.ruby-lang.org/)、[**Node.js**](https://nodejs.org/) 等工具链时，先检查再执行，失败时输出下一步排查方向。
 
-### 2.5、批量脚本 / 压缩包输出
+### 1.5、批量脚本 / 压缩包输出
 
 - 当用户要求整理脚本并输出压缩文件时，最终结构必须是“每个脚本一个文件夹”。
 - 文件夹名使用脚本完整文件名，包含后缀，例如：
@@ -163,7 +171,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、Homebre
 - 批量升级脚本时，默认做结构优化：统一 `#!/bin/zsh`、路径变量、彩色日志、README 阻塞、防误触、`main "$@"`、[**Homebrew**](https://brew.sh/) 自检和升级交互。
 - 输出压缩包前应做静态检查和结构检查；无法执行 MacOS 专属命令时，README 或最终说明里写清楚“未实际执行”。
 
-### 2.6、Shell 验证
+### 1.6、Shell 验证
 
 - Shell 脚本优先做静态检查：
 
@@ -174,7 +182,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、Homebre
 - 修改 `.command` 后确认 shebang、`SCRIPT_DIR` / `LOG_FILE`、`main "$@"`、路径引号、危险操作 `YES` 确认、普通升级动作不是默认执行。
 
 
-### 2.7、脚本运行策略与自检定义
+### 1.7、脚本运行策略与自检定义
 
 - 所有可独立运行的脚本，执行真实业务逻辑前必须先打印自述说明，再等待用户回车确认；用户未回车前不得继续往下执行。`.command` 优先读取同目录 `README.md`，没有 `README.md` 时必须输出内置说明。
 
@@ -193,15 +201,25 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、Homebre
   ```
 
 - 新写脚本时优先参考 [**JobsDocs Shell 脚本代码片段**](https://github.com/JobsKits/JobsDocs/blob/main/🔥Shell脚本代码片段.md/Shell脚本代码片段.md)，但不要机械复制；必须结合当前脚本职责做最小必要改造。
-- 每个方法 / 函数都要写简短注释，说明这段函数负责什么；注释服务维护，不写无意义的逐行翻译。
-- `main` 是唯一流程收口点，里面同样要写清楚主流程编排注释，最后固定：
+- 每个方法 / 函数在定义处都必须写简短注释，说明这个方法 / 函数负责什么；注释服务维护，不写无意义的逐行翻译，也不能只用分隔线代替职责说明。
+- `main` 是唯一入口收口点，但不承载业务编排：`main()` 内固定只保留“一条职责注释 + 一行流程函数调用”。
+- `main()` 内调用自定义方法 / 函数时，必须在调用位置紧邻写注释，说明“为什么调用”或“这一步做什么”；即使 `main()` 按规范只委托一个流程函数，也不能省略这条调用注释。
+- 条件判断、循环、变量赋值、日志输出和多步骤调用都必须下沉到 `run_main_flow()` 或职责明确的独立函数；禁止为了保留表面简短而把复杂命令压缩到 `main()` 的同一行。
+- `run_main_flow()` 负责串联完整流程；流程较长时继续拆成职责单一的函数，避免把复杂度从 `main()` 原样搬到另一个超长函数。
+- 仅供其它脚本 `source` 的函数库可以不定义 `main()`；可以独立执行的入口脚本必须使用该收口形式。
+- 脚本最后固定使用 `main "$@"` 收口：
 
   ```shell
-  main() {
-    # 主流程统一收口：先展示自述，再做环境检查，最后执行真实业务逻辑。
+  # 编排完整业务流程，复杂步骤继续下沉到职责明确的函数。
+  run_main_flow() {
     show_script_intro_and_wait
     check_environment
     run_business
+  }
+
+  main() {
+    # 调用完整业务流程：主入口只负责委托，复杂逻辑统一下沉。
+    run_main_flow "$@"
   }
 
   main "$@"
@@ -212,7 +230,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、Homebre
 - 新写或升级脚本继续统一使用 `#!/bin/zsh`，不要退回 `#!/bin/bash`；除非目标环境明确不是 MacOS / zsh。
 
 
-### 2.8、Sourcetree 自定义动作脚本兼容
+### 1.8、Sourcetree 自定义动作脚本兼容
 
 - `Sourcetree` 自定义动作运行 `.command` 时，环境可能和系统终端双击运行不同：`TERM` 可能为空、`$0` 可能只是脚本名而不是绝对路径、标准输入可能不可交互、输出窗口可能不解析 ANSI 彩色码。
 - 写 `SourceTree.sh` 目录下的脚本时，必须显式探测运行环境；只有确认处在 `Sourcetree` 或非完整终端环境时才降级，不要影响用户双击脚本后在系统终端里的正常交互体验。
@@ -222,3 +240,5 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、Homebre
 - README 防误触在系统终端里继续阻塞等待回车；在 `Sourcetree` 非交互输入下不要卡住流程，应打印“已跳过回车等待”的说明后继续。
 - `Sourcetree` 脚本运行时展示的自述必须写在脚本内部，例如 `show_readme_and_wait` / `show_script_intro_and_wait` 函数直接打印脚本名称、用途、运行入口、环境策略、风险提示和日志路径；不能在运行时 `cat`、拼接或依赖外部 `README.md`。同目录 `README.md` 只作为静态文档保留，不作为脚本运行时自述来源。
 - `Sourcetree` 脚本如果会递归处理工程目录，默认跳过 `.git`、`Pods`、`.dart_tool`、`build`、`DerivedData`，并在最后输出总数、失败数和日志路径；只要有子任务失败，脚本最终也要返回失败状态，方便 `Sourcetree` 判断执行结果。
+
+<a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>

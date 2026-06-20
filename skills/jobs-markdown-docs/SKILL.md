@@ -5,14 +5,25 @@ description: 当任务涉及 Markdown、README、技术文档、表格、流程�
 
 # Jobs Markdown 文档规范
 
+![Jobs出品，必属精品](https://picsum.photos/1500/400)
+
+[toc]
+
+---
+
+## 🔥 <font id=前言>前言</font>
+
 > 本技能由 `💻JobsCodexConfigs/AGENTS.md` 拆分而来，保留原有 Jobs 工作规范。只有当前任务命中本技能描述时才加载本文件，避免把所有细则长期塞进全局上下文。
 
-## 四、[**Markdown**](https://markdown.cn) 文档（`*.md`） <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## 一、[**Markdown**](https://markdown.cn) 文档（`*.md`） <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-### 4.1、整体风格
+### 1.1、整体风格
 
 - Jobs 的 `.md` 文档默认使用中文技术笔记风格，结构清楚、标题醒目、能直接复制命令执行。
 - 修改 `AGENTS.md` 本身时，也必须反哺本文件：把它当成普通 [**Markdown**](https://markdown.cn) 技术文档同步套用本章规则，专有名词按固定链接表补链，归属于上一条的补充内容必须右缩进。
+- `SKILL.md` 同样属于 `*.md` 文档，必须完整遵守本技能的封面、目录、标题编号、外链、缩进和底部锚点规则；不能因为它同时承载 Skill 元数据就跳过 Markdown 公约。
+- `SKILL.md` 的 YAML front matter 必须保持在文件第一行；关闭 front matter 后，再依次写一级标题、封面、`[toc]`、分隔线和“前言”。
+- 每个独立 Markdown 文档都重新计算标题序号：正文二级标题必须从 `## 一、...` 开始连续递增，不能继承来源文档或拆分前文档的旧章节号；三级标题同步从 `### 1.1、...` 开始，并与所属二级标题保持一致；四级标题使用 `#### 1.1.1、...`，标题层级必须和编号层级一致。
 - `*.md` 文档头部必须有图形化展示。默认使用 2D 封面；只有文档主题明确需要空间感、地球、模型、三维可视化时，才使用 3D 效果。2D 和 3D 二选一，不要在同一篇文档头部堆叠两套封面。
 
   - 2D 封面统一使用 [**Picsum**](https://picsum.photos) 随机图，当前固定代码如下：
@@ -62,7 +73,7 @@ description: 当任务涉及 Markdown、README、技术文档、表格、流程�
   <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
   ```
 
-### 4.2、代码块与缩进
+### 1.2、代码块与缩进
 
 - 命令示例统一使用 fenced code block，并标注语言。
 - 凡是内容属于上一条说明的补充、示例或展开，都必须向右缩进两个空格，让视觉层级归属于上一条；包括代码块、表格、引用、图片、[**Mermaid**](https://mermaid.js.org) 流程图、子列表。
@@ -94,7 +105,7 @@ description: 当任务涉及 Markdown、README、技术文档、表格、流程�
 
 - [**Markdown**](https://markdown.cn) 中的路径、命令、文件名、变量名都用反引号包起来，例如 `LOG_FILE`、`/tmp/脚本名.log`、`README.md`。
 
-### 4.3、外链、表格与流程图
+### 1.3、外链、表格与流程图
 
 - 能外链的第三方工具、框架、语言、平台，优先用官方链接，并按 Jobs 文档习惯写成 `[**名称**](URL)`，例如 [**Homebrew**](https://brew.sh/)、[**Flutter**](https://flutter.dev/)、[**CocoaPods**](https://cocoapods.org/)、[**Mermaid**](https://mermaid.js.org)。
 - 标题、表格、正文第一次出现第三方名词时可以直接加链接；代码块、命令、路径、文件名里的字面量不要加链接。
@@ -103,7 +114,7 @@ description: 当任务涉及 Markdown、README、技术文档、表格、流程�
 - 对用户有风险的地方要写明白，不要藏在代码块后面。危险动作必须在文档里说明确认方式，例如“必须输入 `YES` 才会继续”。
 - 文档语气可以保留 Jobs 风格短句，例如“Jobs出品，必属精品”“我是有底线的”，但正文要优先服务操作，不堆装饰。
 
-### 4.3.1、专有名词固定超链接
+#### 1.3.1、专有名词固定超链接
 
 - 写 [**Markdown**](https://markdown.cn) / README / AGENTS 这类技术文档时，遇到下表里的专有名词，正文第一次出现时优先写成 `[**名称**](URL)`；需要强调或便于点击时，后续也可以继续加链接。
 - 同一个工具有多个常见写法时，正文优先使用“推荐写法”；括号里的别名只用于识别，不强行改代码块里的命令。
@@ -158,9 +169,11 @@ description: 当任务涉及 Markdown、README、技术文档、表格、流程�
   | [**JobsKits**](https://github.com/JobsKits)                        | `JobsKits`                                        | `https://github.com/JobsKits`                  |
   | [**JobsDocs Shell 脚本代码片段**](https://github.com/JobsKits/JobsDocs/blob/main/🔥Shell脚本代码片段.md/Shell脚本代码片段.md) | `Shell脚本代码片段` / `JobsDocs 脚本片段`        | `https://github.com/JobsKits/JobsDocs/blob/main/🔥Shell脚本代码片段.md/Shell脚本代码片段.md` |
 
-### 4.4、README 固定内容
+### 1.4、README 固定内容
 
 - 每个可双击脚本目录优先放同名脚本和 `README.md`。
 - README 用中文说明，适合用户双击前先看懂：用途、适用场景、执行前检查、操作流程、是否有风险、日志位置、常见问题。
 - 技术文档优先包含这些块，按需要取舍：`前言`、`适用场景`、`运行方式`、`执行前检查`、`脚本执行命令`、`流程图`、`日志文件`、`常见问题`、`风险说明`、`未执行声明`。
 - README 不写成变更日志，不使用“本次更新”“本次升级内容”“本次已按某标准升级”这类阶段性口吻。需要说明改造结果时，要改写成全量描述：脚本目标、适用场景、完整运行行为、环境兼容策略、交互规则、日志路径、风险边界和排查方式。
+
+<a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
