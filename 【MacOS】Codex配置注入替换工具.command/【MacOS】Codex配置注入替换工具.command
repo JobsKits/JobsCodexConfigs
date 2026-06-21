@@ -1,12 +1,14 @@
 #!/bin/zsh
-setopt NO_NOMATCH
+# 脚本自述：
+# - 脚本名称：【MacOS】Codex配置注入替换工具.command
+# - 核心用途：执行“Codex配置注入替换工具”对应的本机环境配置任务。
+# - 影响范围：可能安装、更新或修改当前用户的工具链与配置文件。
+# - 运行提示：运行后会先打印内置自述；终端模式按回车确认后继续，按 Ctrl+C 可取消。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")" && pwd)"
 SCRIPT_PATH="${SCRIPT_DIR}/$(basename -- "$0")"
 SCRIPT_BASENAME=$(basename "$0" | sed 's/\.[^.]*$//')
 LOG_FILE="/tmp/${SCRIPT_BASENAME}.log"
-: > "$LOG_FILE"
-
 # 解析并返回后续流程需要的目标信息。
 resolve_toolkit_dir() {
   # 脚本推荐位于：💻JobsCodexConfigs/【MacOS】Codex配置注入替换工具.command/脚本文件
@@ -36,7 +38,6 @@ TARGET_SKILLS_DIR="${TARGET_SKILLS_DIR:-${HOME}/.agents/skills}"
 BREW_BIN=""
 TEMP_WORK_DIRS=()
 DEPLOYED_SKILL_NAMES=()
-
 # 按当前输出级别记录终端信息，并同步写入脚本日志。
 log()            { echo -e "$1" | tee -a "$LOG_FILE"; }
 # 按当前输出级别记录终端信息，并同步写入脚本日志。
@@ -65,7 +66,6 @@ gray_echo()      { log "\033[0;90m$1\033[0m"; }
 bold_echo()      { log "\033[1m$1\033[0m"; }
 # 按当前输出级别记录终端信息，并同步写入脚本日志。
 underline_echo() { log "\033[4m$1\033[0m"; }
-
 # 执行已经拆分完成的独立业务步骤。
 run_command() {
   info_echo "执行：$*"
@@ -76,13 +76,11 @@ run_command() {
   fi
   return "$exit_code"
 }
-
 # 封装 register_temp_dir 对应的独立处理逻辑。
 register_temp_dir() {
   local dir="$1"
   [[ -n "$dir" && -d "$dir" ]] && TEMP_WORK_DIRS+=("$dir")
 }
-
 # 执行对应的清理操作，并保留必要的安全检查。
 cleanup_temp_dirs() {
   local dir=""
@@ -92,9 +90,12 @@ cleanup_temp_dirs() {
     fi
   done
 }
-
-trap cleanup_temp_dirs EXIT INT TERM
-
+# 初始化 Shell 选项、日志和临时目录清理钩子。
+initialize_script_runtime() {
+  setopt NO_NOMATCH
+  : > "$LOG_FILE"
+  trap cleanup_temp_dirs EXIT INT TERM
+}
 # 展示脚本用途和影响范围，并在执行前等待用户确认。
 show_readme_and_wait() {
   local readme_path="${SCRIPT_DIR}/README.md"
@@ -103,6 +104,12 @@ show_readme_and_wait() {
   fi
 
   clear
+  print -r -- '============================== 脚本内置自述 =============================='
+  print -r -- '脚本名称：【MacOS】Codex配置注入替换工具.command'
+  print -r -- '核心用途：执行“Codex配置注入替换工具”对应的本机环境配置任务。'
+  print -r -- '影响范围：可能安装、更新或修改当前用户的工具链与配置文件。'
+  print -r -- '取消方式：确认前按 Ctrl+C 终止，不会继续执行后续业务。'
+  print -r -- '============================================================================'
   if [[ -f "$readme_path" ]]; then
     highlight_echo "============================== README.md =============================="
     cat "$readme_path" | tee -a "$LOG_FILE"
@@ -114,7 +121,6 @@ show_readme_and_wait() {
   local answer=""
   read -r "?👉 已阅读自述文件，按回车继续执行；按 Ctrl+C 取消：" answer
 }
-
 # 收集并校验用户输入，决定后续执行路径。
 ask_any_to_run() {
   local message="$1"
@@ -122,12 +128,10 @@ ask_any_to_run() {
   read -r "?${message}（直接回车跳过；输入任意字符后回车执行）：" answer
   [[ -n "$answer" ]]
 }
-
 # 解析并返回后续流程需要的目标信息。
 get_cpu_arch() {
   [[ "$(uname -m)" == "arm64" ]] && echo "arm64" || echo "x86_64"
 }
-
 # 解析并返回后续流程需要的目标信息。
 find_first_app_path() {
   # 按 MacOS 固定应用目录查找图形化 App。
@@ -140,7 +144,6 @@ find_first_app_path() {
   done
   return 1
 }
-
 # 解析并返回后续流程需要的目标信息。
 find_brew_path() {
   if command -v brew >/dev/null 2>&1; then
@@ -160,7 +163,6 @@ find_brew_path() {
 
   return 1
 }
-
 # 检查当前运行条件是否满足后续流程要求。
 ensure_homebrew_shellenv() {
   local brew_path="$1"
@@ -189,7 +191,6 @@ ensure_homebrew_shellenv() {
     gray_echo "已存在 Homebrew shellenv 配置块，跳过重复写入。"
   fi
 }
-
 # 执行对应的环境配置或同步处理。
 install_homebrew() {
   warn_echo "未检测到 Homebrew。"
@@ -215,7 +216,6 @@ install_homebrew() {
   fi
   rm -f "$installer_path"
 }
-
 # 检查当前运行条件是否满足后续流程要求。
 ensure_homebrew() {
   local arch="$(get_cpu_arch)"
@@ -243,7 +243,6 @@ ensure_homebrew() {
     gray_echo "已跳过 Homebrew 升级 / 自检。"
   fi
 }
-
 # 检查当前运行条件是否满足后续流程要求。
 check_fzf_health() {
   # fzf 是 Codex++ 启动选择的交互基础，这里做一次轻量健康体检。
@@ -272,7 +271,6 @@ check_fzf_health() {
   fi
   return 0
 }
-
 # 检查当前运行条件是否满足后续流程要求。
 ensure_fzf() {
   if command -v fzf >/dev/null 2>&1; then
@@ -292,13 +290,11 @@ ensure_fzf() {
     exit 1
   }
 }
-
 # 检查当前运行条件是否满足后续流程要求。
 is_cask_installed() {
   local cask_name="$1"
   "$BREW_BIN" list --cask "$cask_name" >/dev/null 2>&1
 }
-
 # 检查当前运行条件是否满足后续流程要求。
 ensure_codex() {
   # Codex 可能来自 Homebrew Cask，也可能是手动安装的 /Applications/Codex.app；这里以实际可启动入口为准。
@@ -369,7 +365,6 @@ ensure_codex() {
     gray_echo "Codex 不是通过本脚本识别的 Homebrew Cask 安装，跳过 Cask 升级。"
   fi
 }
-
 # 检查当前运行条件是否满足后续流程要求。
 validate_toolkit_layout() {
   if [[ ! -f "$GLOBAL_AGENTS_PATH" ]]; then
@@ -398,7 +393,6 @@ validate_toolkit_layout() {
   gray_echo "目标 config.toml：${TARGET_CODEX_CONFIG}"
   gray_echo "目标 Skills：${TARGET_SKILLS_DIR}"
 }
-
 # 封装 stop_codex_runtime 对应的独立处理逻辑。
 stop_codex_runtime() {
   local message="$1"
@@ -437,7 +431,6 @@ stop_codex_runtime() {
 
   success_echo "Codex 运行态已停止。"
 }
-
 # 封装 deploy_global_agents 对应的独立处理逻辑。
 deploy_global_agents() {
   # 单向部署本仓库 AGENTS.md 到 Codex 全局指导文件位置。
@@ -471,7 +464,6 @@ deploy_global_agents() {
 
   success_echo "全局 AGENTS.md 部署完成。"
 }
-
 # 封装 deploy_user_skills 对应的独立处理逻辑。
 deploy_user_skills() {
   # 单向部署本仓库 skills 到 Codex 用户级 Skills 目录；不从系统位置回写到仓库。
@@ -536,8 +528,6 @@ deploy_user_skills() {
 
   success_echo "Jobs Skills 部署完成，共 ${deployed_count} 个。"
 }
-
-
 # 封装 toml_escape_string 对应的独立处理逻辑。
 toml_escape_string() {
   local value="$1"
@@ -545,7 +535,6 @@ toml_escape_string() {
   value="${value//\"/\\\"}"
   print -r -- "$value"
 }
-
 # 执行对应的环境配置或同步处理。
 update_codex_skills_config() {
   # Codex 官方会扫描 $HOME/.agents/skills；Codex++ 管理器的 Skills 页签通常读取 ~/.codex/config.toml 中的 [[skills.config]] 条目。
@@ -609,7 +598,6 @@ update_codex_skills_config() {
   rm -f "$temp_config"
   success_echo "已更新 Codex Skills 配置：${TARGET_CODEX_CONFIG}"
 }
-
 # 封装 open_app_target 对应的独立处理逻辑。
 open_app_target() {
   # 优先按完整 .app 路径启动；路径不存在时按应用名兜底。
@@ -622,7 +610,6 @@ open_app_target() {
 
   /usr/bin/open "$app_target"
 }
-
 # 封装 build_codex_launcher_choice_file 对应的独立处理逻辑。
 build_codex_launcher_choice_file() {
   # Codex++ 存在时，让用户通过 fzf 选择增强入口或官方入口。
@@ -651,7 +638,6 @@ build_codex_launcher_choice_file() {
     printf "%s\t%s\n" "官方 Codex｜open -a Codex" "__APP_NAME__:Codex" >> "$choice_file"
   fi
 }
-
 # 封装 restart_codex_runtime 对应的独立处理逻辑。
 restart_codex_runtime() {
   stop_codex_runtime "部署完成后准备重启 Codex。"
@@ -703,7 +689,6 @@ restart_codex_runtime() {
     warn_echo "未能启动官方 Codex。若你使用 CLI 入口，请重新打开终端后执行 codex。"
   fi
 }
-
 # 封装 print_finish_summary 对应的独立处理逻辑。
 print_finish_summary() {
   echo ""
@@ -717,27 +702,32 @@ print_finish_summary() {
   gray_echo "日志文件：${LOG_FILE}"
   highlight_echo "======================================================================="
 }
-
-# 编排完整业务流程，复杂步骤继续下沉到职责明确的函数。
-run_main_flow() {
-  show_readme_and_wait
-  validate_toolkit_layout
-  ensure_homebrew
-  ensure_fzf
-  ensure_codex
-
-  stop_codex_runtime "部署前先停止 Codex，避免运行中读取旧配置。"
-  deploy_global_agents
-  deploy_user_skills
-  update_codex_skills_config
-  restart_codex_runtime
-  print_finish_summary
-}
-
-# 统一收口脚本入口，仅委托已经拆分完成的业务流程。
+# 编排脚本的高层业务流程。
 main() {
-  # 主入口只负责委托完整业务流程，复杂逻辑统一下沉。
-  run_main_flow "$@"
+  # 展示脚本内置自述，并按运行入口完成防误触确认。
+  show_readme_and_wait
+  # 初始化 Shell 选项、日志和退出清理钩子。
+  initialize_script_runtime
+  # 检查当前环境与执行条件是否满足脚本要求。
+  validate_toolkit_layout
+  # 检查当前环境与执行条件是否满足脚本要求。
+  ensure_homebrew
+  # 检查当前环境与执行条件是否满足脚本要求。
+  ensure_fzf
+  # 检查当前环境与执行条件是否满足脚本要求。
+  ensure_codex
+  # 执行 stop_codex_runtime 对应的核心业务步骤。
+  stop_codex_runtime "部署前先停止 Codex，避免运行中读取旧配置。"
+  # 执行 deploy_global_agents 对应的核心业务步骤。
+  deploy_global_agents
+  # 执行 deploy_user_skills 对应的核心业务步骤。
+  deploy_user_skills
+  # 执行 update_codex_skills_config 对应的核心业务步骤。
+  update_codex_skills_config
+  # 执行 restart_codex_runtime 对应的核心业务步骤。
+  restart_codex_runtime
+  # 输出脚本执行结果、摘要和日志位置。
+  print_finish_summary
 }
 
 main "$@"
