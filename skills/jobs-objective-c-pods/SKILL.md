@@ -23,6 +23,8 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 - Swift 侧的 iOS 项目固定指 `/Users/jobs/Documents/Github/JobsBaseConfig/JobsBaseConfig@JobsSwiftBaseConfigDemo`。
 - OC 侧的新项目固定指 `/Users/jobs/Documents/Github/JobsOCBaseConfigDemo@ByPods`。
 - OC 侧的老项目固定指 `/Users/jobs/Documents/Github/JobsBaseConfig/JobsBaseConfig@JobsOCBaseConfigDemo`。
+- OC 新项目由 OC 老项目升级改造而来：新项目把老项目中集成于主工程的一部分能力拆解成本地 Pods 管理，拆解过程中只做极小调整，绝大多数新项目本地 Pod 都能在老项目主工程里找到对应来源或对应功能。
+- 从 OC 新项目向 OC 老项目平移能力时，要按老项目的主工程集成方式落地：不要把新项目的 `Pod名@Pods` 目录、podspec 或 Podfile 依赖照搬成老项目的新 Pod；应把源码放回老项目主工程的对应功能目录，把资源加入老项目资源目录，把 Demo 入口、聚合头、Build Phases 和 target 引用同步到老项目现有结构。
 - OC 新项目里“Jobs 自己写的代码”定义为：除 `Pods/` 及其下辖、`JobsByPods/ManualByOCPods@Pods/` 及其下辖之外的全部代码。
 - 所有本地管理的 Pod 默认位于项目根目录 `JobsByPods` 文件夹下，每个 Pod 文件夹命名统一为 `Pod名@Pods`。
 - 外源性 Pod 本地化后，统一放入 `JobsByPods/ManualByOCPods@Pods` 管辖。第三方来源信息要保留，只做本地托管适配，不抹掉上游痕迹。
@@ -131,10 +133,12 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 - OC 项目的 `Podfile.deps` 只维护 `pod` 依赖定义，不直接执行外部脚本；外部脚本统一由 `Podfile` 调用，并且必须具备“脚本不存在就跳过、不影响 `pod install` 主流程”的保护。
 - `Podfile` 中所有 `ScriptsByPods`、`.command`、`.sh`、`.rb` 脚本调用，以及 `load` 外部 Ruby 文件，都按可选增强处理：脚本缺失、`chmod +x` 失败、脚本执行失败时只打印告警并返回，不用 `raise` 中断。除非用户明确指定强制门禁，否则依赖报告、CodeGraph 等 post-install 脚本都不能阻塞主流程。
 
-### 1.8、`return self` 收口格式
+### 1.8、`return` 收口格式
 
-- [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html) 链式 Block / 初始化收口里，如果最后一行是 `return self;`，且上一行刚好是右括号 `}`，则 `return self;` 不单独成行，必须紧跟在上一行右括号后面写成 `}return self;`。
+- [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html) 代码里，只要 `return ...;` 紧跟在控制块、循环块、枚举块或其它内部代码块的右花括号 `}` 后面，就不单独成行，必须紧跟在上一行右括号后面写成 `};return ...;`。这条规则覆盖所有返回值，不只限于 `return self;`。
+- 这条规则只作用于方法或 Block 内部的代码块收口；不要把方法实现本身的结束花括号、`@implementation` / `@end`、类或结构声明收口误改成 `};return`。
 - 这条规则只应用 Jobs 自己写的代码；外援 Pod 不处理，包括 `Pods/` 目录和 `JobsByPods/ManualByOCPods@Pods/` 目录。
+- 每次写 OC 代码或批量改 OC 文件后，如果触碰了 Jobs 自己维护的 `.m` / `.mm` 文件，必须在目标范围内扫描 `}\nreturn` 残留；优先使用 `rg -n -U "\\}\\n\\s*return\\b" <目标路径>`，命中后按本节规则修正。用户点名某些模块时，必须覆盖用户点名的全部模块。
 
   ```objc
   -(JobsRetMutableParagraphStyleByCGFloatBlock _Nonnull)byDefaultTabInterval {
@@ -145,6 +149,17 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
               self.defaultTabInterval = v;
           }return self;
       };
+  }
+  ```
+
+  ```objc
+  -(NSString *)stableHash:(NSString *)value {
+      uint64_t hash = 14695981039346656037ULL;
+      const char *string = value.UTF8String;
+      while (*string) {
+          hash ^= (uint64_t)(unsigned char)(*string++);
+          hash *= 1099511628211ULL;
+      };return [NSString stringWithFormat:@"%llx", hash];
   }
   ```
 

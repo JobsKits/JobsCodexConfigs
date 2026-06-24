@@ -48,6 +48,7 @@
 - 命中某个任务类型时，优先加载对应 Skill 的完整规则；不要把所有专项规范一次性塞回本全局文件。
 - 多领域任务可以组合多个 Skill，例如整理 `.command` 并写 README 时，同时参考 `jobs-macos-shell` 和 `jobs-markdown-docs`。
 - Skill 内规则与本文件冲突时，本文件只管全局边界，具体工程实践以对应 Skill 为准。
+- 仓库根目录存在 `.codegraph/` 时，理解或定位代码优先使用 `codegraph_explore`；如果 MCP 工具未加载，先通过 tool search 加载，仍不可用时使用 `codegraph explore "<符号名或问题>"`。仓库没有 `.codegraph/` 时直接跳过 CodeGraph，不主动初始化索引。
 - 涉及 OC / Swift 的 DSL、点语法、链式语法、`byXxx` 命名、Apple API 封装或 Jobs 自建 Model 封装时，分别加载 `jobs-objective-c-pods` / `jobs-swift`；两侧公约以“同一 DSL 思想、不同语言实现”为准。
 - DSL 链式方法必须返回可继续链下去的对象；除明确的终止动作外，不写只执行副作用却返回 `void` 的 DSL。返回类型要尽量保持当前主对象类型，避免链条中途降级到父类后丢失子类点语法。
 
@@ -56,5 +57,7 @@
 - Swift 侧 iOS 项目：`/Users/jobs/Documents/Github/JobsBaseConfig/JobsBaseConfig@JobsSwiftBaseConfigDemo`。
 - OC 侧新项目：`/Users/jobs/Documents/Github/JobsOCBaseConfigDemo@ByPods`。
 - OC 侧老项目：`/Users/jobs/Documents/Github/JobsBaseConfig/JobsBaseConfig@JobsOCBaseConfigDemo`。
+- OC 新项目由 OC 老项目升级改造而来：新项目把老项目中集成于主工程的一部分能力拆解成本地 Pods 管理，拆解过程中只做极小调整，绝大多数新项目本地 Pod 都能在老项目主工程里找到对应来源或对应功能。
+- 从 OC 新项目向 OC 老项目平移能力时，要符合老项目“功能集成于主工程”的特点：不要把新项目的本地 Pod 形态照搬到老项目，也不要新增 Pod 依赖；应把源码、资源、Demo 入口和工程引用平移到老项目主工程既有目录与 target 中。
 
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
