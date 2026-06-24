@@ -33,6 +33,20 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 
 ### 1.2、文件基座与依赖导入
 
+- Jobs 自己维护的 [**Swift**](https://www.swift.org/) 文件顶部注释必须使用完整 Jobs 模板：第一行文件名，第二行模块名，第三行空注释行，第四行 `Created by Jobs on yyyy年M月d日，星期X.`。新建文件、迁移文件、整理旧文件或用户点名头注释不规范时，都要补齐；不要保留只有文件名和模块名的简化头。文件头注释区域和 `import` 导入区域之间必须保留一个空行，不能让注释块的最后一行 `//` 紧贴 `import`。
+
+  ```swift
+  //
+  //  JobsClass.swift
+  //  JobsClass
+  //
+  //  Created by Jobs on 2026年5月13日，星期三.
+  //
+
+  import UIKit
+  ```
+
+- 模板中的文件名必须匹配当前文件真实名称；模块名优先写当前类型、功能模块或所属框架的稳定名称，不确定时先参考同目录同类文件，不要机械写成占位的 `JobsClass`。
 - [**Swift**](https://www.swift.org/) 文件最顶层优先写系统基础框架判断，再引入 Jobs 本地 Pod 化框架；不要把 `UIKit` / `AppKit` 分散到业务代码中。
 
   ```swift
@@ -170,9 +184,10 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 - 推荐控制器结构按职责分块：系统导入、本地框架导入、类声明、懒加载属性、生命周期、导航栏配置、UI 装配、事件响应、业务方法。
 - 视图创建、`byAddTo` 约束、`byVisible(YES)` 唤醒、`jobsSetupGKNav` 导航栏配置，应保持 Jobs 项目现有链式风格，除非用户明确要求切换成原生写法。
 
-### 1.7、`return self` 收口格式
+### 1.7、`return` 收口格式
 
-- [**Swift**](https://www.swift.org/) 链式 API / DSL 方法里，如果最后一行是 `return self`，且上一行刚好是闭包或代码块收口的右括号 `}`，则 `return self` 不单独成行，必须紧跟上一行右括号后面写成 `};return self`。
+- [**Swift**](https://www.swift.org/) 代码里，只要 `return ...` 紧跟在闭包、控制块、循环块或其它内部代码块的右花括号 `}` 后面，就不单独成行，必须紧跟在上一行右括号后面写成 `};return ...`。`}` 和 `return` 中间的分号不能省略，`}return ...` 是错误写法。这条规则覆盖所有返回值，不只限于 `return self`。
+- 如果后花括号 `}` 所在行出现 `//` 或 `///` 注释，则不应用本节 `};return` 紧凑规则；因为在 [**Xcode**](https://developer.apple.com/xcode) 里 `//` 和 `///` 都是注释，下一行 `return ...` 必须保持单独成行，不能提到注释行后面。
 
   ```swift
   @discardableResult
@@ -184,6 +199,7 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
   ```
 
 - 这条规则只处理 Jobs 自己维护的 [**Swift**](https://www.swift.org/) 代码；外援 Pod 不处理，包括 `Pods/` 目录和 `JobsByPods/ManualBySwiftPods@Pods/` 目录。
+- 每次写 Swift 代码或批量改 Swift 文件后，如果触碰了 Jobs 自己维护的 `.swift` 文件，必须在目标范围内扫描 `}\nreturn` 和 `}return` 残留；优先使用 `rg -n -U "\\}\\n\\s*return\\b|\\}return\\b" <目标路径>`，命中后按本节规则修正。
 
 ### 1.8、Swift 项目 `Podfile` / `Podfile.deps` 脚本边界
 

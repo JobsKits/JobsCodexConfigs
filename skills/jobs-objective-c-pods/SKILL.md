@@ -31,6 +31,20 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 - `JobsByOCPods` 是最初提取出来的本地 Pod，也是后续本地 Pods 分离时的源头参照。遇到缺文件、缺宏、缺分类、缺辅助类时，优先回到 `JobsByOCPods` 找源头，再迁移到目标 Pod 的合适位置。
 - 工程最初能完整编译通过的前提，是尚未把部分本地写法提取成多个本地 Pod。拆分后，每个 Pod 实际上成为独立工程，只是通过同一个 `xcworkspace` 协同管理，因此编译器会提高跨域访问门槛，暴露头文件、模块化、依赖边界和循环引用问题。
 - 处理编译错误时，不要只追求“先编过”。要判断错误是不是由本地 Pod 化后的边界变化引起：头文件暴露层级、`Core` / `Support` 归属、podspec 依赖、聚合头、`HEADER_SEARCH_PATHS`、循环依赖，都要一起看。
+- Jobs 自己维护的 [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html) 文件（`*.h` / `*.m` / `*.mm`）顶部注释必须使用完整 Jobs 模板：第一行文件名，第二行模块名，第三行空注释行，第四行 `Created by Jobs on yyyy年M月d日，星期X.`。新建文件、迁移文件、整理旧文件或用户点名头注释不规范时，都要补齐；不要保留只有文件名和模块名的简化头。文件头注释区域和 `#import` 导入区域之间必须保留一个空行，不能让注释块的最后一行 `//` 紧贴 `#import`。
+
+  ```objc
+  //
+  //  JobsClass.h
+  //  JobsClass
+  //
+  //  Created by Jobs on 2026年5月13日，星期三.
+  //
+
+  #import "JobsClass.h"
+  ```
+
+- 模板中的文件名必须匹配当前文件真实名称，例如 `PDFView+DSL.m`；模块名优先写当前类、分类或所属 Pod / 模块的稳定名称，不确定时先参考同目录同类文件，不要机械写成占位的 `JobsClass`。
 
 ### 1.2、`Core` / `Support` 文件夹职责
 
@@ -135,10 +149,11 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 
 ### 1.8、`return` 收口格式
 
-- [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html) 代码里，只要 `return ...;` 紧跟在控制块、循环块、枚举块或其它内部代码块的右花括号 `}` 后面，就不单独成行，必须紧跟在上一行右括号后面写成 `};return ...;`。这条规则覆盖所有返回值，不只限于 `return self;`。
+- [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html) 代码里，只要 `return ...;` 紧跟在控制块、循环块、枚举块或其它内部代码块的右花括号 `}` 后面，就不单独成行，必须紧跟在上一行右括号后面写成 `};return ...;`。`}` 和 `return` 中间的分号不能省略，`}return ...;` 是错误写法。这条规则覆盖所有返回值，不只限于 `return self;`。
+- 如果后花括号 `}` 所在行出现 `//` 或 `///` 注释，则不应用本节 `};return` 紧凑规则；因为在 [**Xcode**](https://developer.apple.com/xcode) 里 `//` 和 `///` 都是注释，下一行 `return ...;` 必须保持单独成行，不能提到注释行后面。
 - 这条规则只作用于方法或 Block 内部的代码块收口；不要把方法实现本身的结束花括号、`@implementation` / `@end`、类或结构声明收口误改成 `};return`。
 - 这条规则只应用 Jobs 自己写的代码；外援 Pod 不处理，包括 `Pods/` 目录和 `JobsByPods/ManualByOCPods@Pods/` 目录。
-- 每次写 OC 代码或批量改 OC 文件后，如果触碰了 Jobs 自己维护的 `.m` / `.mm` 文件，必须在目标范围内扫描 `}\nreturn` 残留；优先使用 `rg -n -U "\\}\\n\\s*return\\b" <目标路径>`，命中后按本节规则修正。用户点名某些模块时，必须覆盖用户点名的全部模块。
+- 每次写 OC 代码或批量改 OC 文件后，如果触碰了 Jobs 自己维护的 `.m` / `.mm` 文件，必须在目标范围内扫描 `}\nreturn` 和 `}return` 残留；优先使用 `rg -n -U "\\}\\n\\s*return\\b|\\}return\\b" <目标路径>`，命中后按本节规则修正。用户点名某些模块时，必须覆盖用户点名的全部模块。
 
   ```objc
   -(JobsRetMutableParagraphStyleByCGFloatBlock _Nonnull)byDefaultTabInterval {
@@ -147,7 +162,7 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
           @jobs_strongify(self)
           if (@available(iOS 7.0, tvOS 9.0, watchOS 2.0, visionOS 1.0, *)) {
               self.defaultTabInterval = v;
-          }return self;
+          };return self;
       };
   }
   ```
