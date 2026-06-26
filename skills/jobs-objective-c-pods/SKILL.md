@@ -101,8 +101,15 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 - `Extra` Pod 里如果发现继承自 `NSObject`、实质承担配置 / model 职责的第三方类或本地适配类，默认做成 `类名+DSL.h/.m` 的形式并入对应 `Extra` Pod 的 `Core`。如果 `Core` 下文件不止一对 `*.h/*.m`，每组文件优先用各自名字命名的文件夹包裹管理，例如 `Core/BRPickerStyle/BRPickerStyle+DSL.h`。
 - 一个文件只办一件事。遇到历史代码在 `类名+Category.h/.m` 里顺手定义主类、兼容空类、记录类、配置类等独立类型时，必须拆到独立的 `类名.h/.m` 文件；category 文件只保留 category 职责。为防止旧代码或外部库重复定义，兼容类声明和空实现默认用 `#ifndef` 宏保护。
 - 批量修改后，如果用户指出一个具体文件的问题，默认按同一套批量规则做全局回归扫描。只要该问题可能由统一脚本、统一替换、统一 import 规则造成，就不能只修被点名文件，要在同一覆盖范围内找同类问题并同步修正。
+- 但凡修改本地 Pod，不管是新增、删除、重命名、调整 `Core` / `Support`、公开 API、入口头、资源、podspec、`Podfile.deps` 还是依赖关系，都必须扫描整个归属工程里使用到这个 Pod 的代码并同步更新。扫描范围至少包括主工程源码、Demo 入口、`#import` / 聚合头引用、其它 Pod 的 podspec 依赖、`Podfile` / `Podfile.deps`、README / 技术文档和脚本中的 Pod 名；不能只改 `Pod名@Pods` 目录。`Pods/`、`Podfile.lock`、`PodspecDependencyReport` 等生成物如果本轮没有执行生成流程，不手工硬改，但最终必须明确标出仍需刷新。
 - 每次新增、删除或调整 Pod 依赖，都要同步检查直接依赖和第二层以下间接依赖。不要只看当前 podspec 里写了什么，还要看它依赖的 Pod 又依赖了谁。
 - 严禁用“互相依赖”解决编译问题。出现循环依赖时，要把公共部分下沉到更底层 Pod，或把内部实现移动到 `Support`，而不是继续堆 `dependency`。
+- 调整本地管理的子 Pod、`Podfile`、`Podfile.deps`、`JobsPodspecKit.rb` 或 `post_install` / `post_integrate` 逻辑后，不能只以 `pod install` 不报错作为完成标准。必须额外确认 `Pods/Pods.xcodeproj` 能被 `xcodeproj` 正常打开、`PBXProject` 根对象没有被新文件引用覆盖、`xcodebuild -workspace ... -list` 能列出目标 Pod scheme，并且 Xcode 左侧 `Development Pods > Pod名` 能展开到 `Core` / `Support` / `Pod` / `Support Files` 等真实子项。
+- 如果 Xcode 左侧能看到 Pod 名但点击后没有子项，优先怀疑 Pods 工程文件被脚本写坏或 UUID 冲突，而不是怀疑 CocoaPods 没装成功。重点检查 `Podfile` 里手动给 `Pods.xcodeproj` 增加文件引用、移动 group、固定 UUID、补 `Podfile.deps` / 报告文件引用等逻辑；这类增强只能做展示辅助，失败或冲突时应跳过，不能破坏 CocoaPods 生成的 `PBXProject`、root group 和 Development Pods 树。
+- 本地子 Pod 的可用性回归至少覆盖三步：`pod install --no-repo-update`、`ruby -rxcodeproj -e 'p = Xcodeproj::Project.open("Pods/Pods.xcodeproj"); puts [p.root_object.isa, p.targets.map(&:name).grep(/Pod名/)].inspect'`、`xcodebuild -workspace 工程.xcworkspace -scheme Pod名 -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build`。如果改动会影响主 App Demo，还要编译主 App scheme。
+- Demo 分类或主工程分类不要把试验能力全局污染到所有基础控件。尤其是 `UITableView` / `UICollectionView` 的 `reloadData` swizzle，禁止在分类 `+initialize` 里用 `self` 做交换；要么显式 opt-in，要么在 `+load` 中固定基类并 `dispatch_once` 交换一次，且默认状态必须 no-op。否则新 Pod 的普通 table 也会被 Demo 分类截获，出现点击进入二级页后崩溃、野指针或空数据视图误插入。
+- `reloadData` swizzle 必须考虑重入保护。`UITableView` / `UICollectionView` 原始 `reloadData` 可能在 `layoutSubviews`、索引刷新、约束更新或第三方刷新回调里再次触发 `reloadData`；如果 swizzle 方法里直接 `[self jobsReloadData]` 而没有 associated flag 防重入，容易形成 `reloadData -> jobsReloadData -> layoutSubviews -> reloadData` 的递归，最终 `EXC_BAD_ACCESS` 或栈溢出。
+- `UITableViewDataSource` / `UITableViewDelegate` 回调里不要为了比较来源而调用 `self.tableView` 这类懒加载 getter。尤其是在懒加载闭包中刚创建 table、尚未赋值给 ivar 时，系统可能立即回调 `sectionIndexTitlesForTableView:`、`heightForHeaderInSection:` 等方法；这时再进 getter 会重复创建 table。应使用 `_tableView` 这类 ivar 做身份比较，避免懒加载重入。
 
 #### 1.4.1、`JobsDefineProperty.h` 属性宏覆盖
 
@@ -196,10 +203,13 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 ### 1.9、Jobs DSL 总体思想
 
 - Jobs 的 OC / Swift DSL 本质是一套命名和调用思想：用点语法 + 链式语法让对象从创建、配置、事件、装配到布局尽量一路设置下去，减少散落赋值和割裂的中间变量。
+- Jobs DSL 的第一性是对系统 API 的二次封装。OC / Swift 两侧允许因语言、Block / closure、范型、可选值、返回类型等差异采用不同实现形态，但判断是否应该补 DSL 时，永远先看对应系统 API 是否属于当前类型的覆盖范围，而不是先看另一侧代码是否已经存在同形态实现。
 - DSL 命名统一使用 `by` + 首字母大写的属性名、单参数方法名或一个参数语义名。例如 `text` 对应 `byText(...)`，`font` 对应 `byFont(...)`，`addSubview:` 这类动作可按既有封装写成 `addOn(...)` / `byAddTo(...)` 等项目内统一语义。
 - 遇到 `BOOL` 属性且系统名以 `is` 开头时，DSL 名省略 `is`，例如 `isSelected` 写成 `bySelected(...)`，`isEnabled` 写成 `byEnabled(...)`，保持 Swift / OC 两侧命名平行。
 - DSL 覆盖范围不只限于 Apple 原生 API。Jobs 自建 Model、配置对象、业务基础对象也要按同一套思路封装；OC 侧重点体现在 `JobsModel` 的 `JobsModelDSL`，例如 `UIViewModel`、`UITextModel`、`UIButtonModel` 等大 Model / 子 Model 都应支持链式配置。
+- 对系统 API 进行二次封装成 JobsOCDSL 时，覆盖标准是当前类型自己声明的全部属性、0 个入参数方法、1 个入参数方法。父类已有能力放在父类 DSL，不在子类重复铺开；有返回值的方法默认也要收口为可继续链下去的主对象，除非该能力天然是查询或明确的终止动作。
 - OC 因为 Block 类型繁多，所有可复用 Block typedef 必须集中放入 `JobsBlock` 管理；新增 DSL 前先查 `JobsBlock` 是否已有可复用类型，缺失再补到合适的 `JobsBlock.h`、`ReturnByCertainParametersBlock.h` 或其它既有分类头里，不在 DSL 头文件里私自散落 typedef。
+- OC 项目里系统 API DSL 产生的相关 Block 定义全部收进 `JobsBlock`：按返回值和入参签名复用或补齐 typedef，DSL 头文件只引用既有 Block 类型，不本地声明临时 Block。
 - `JobsBlock` 是全局 Block 服务，不只服务 DSL。整理 `JobsBlock` / `ReturnByCertainParametersBlock.h` 时，优先按返回值相同归为一组，同组第一行用 `/// 返回类型` 标注；`#pragma mark ——` 只写大类名，不写 `DSL` 字样。遇到外源 Pod 的 Block 定义，大类名写 Pod 名，例如 `#pragma mark —— ReactiveObjC`，再用 `/// RACSignal`、`/// RACDisposable` 这类返回值标注细分。
 - 判断 Block 是否重复时，只看返回类型和入参类型；如果两个 typedef 的返回类型和入参类型完全一致，只是 Block 名不同，它们就是同一个 Block。新增调用优先复用现有 typedef；历史兼容名需要保留时，用 `typedef 已有Block名 兼容Block名;` 做别名，不再重复写一遍 `(^BlockName)(...)` 签名。
 - `JobsBlock` 里的 Block 类型命名一律把 `Return` 缩写成 `Ret`，例如 `JobsReturnIDByAppLanguageBlock` 必须改成 `JobsRetIDByAppLanguageBlock`。修改 typedef 名后必须全局搜索并同步替换所有调用、属性、方法签名和文档引用；不要只改 `JobsBlock.h`。
@@ -210,6 +220,7 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 - 对“中心对象”配置时，优先围绕一个主接收者一路链式调用。需要配置子对象时，优先提供 `byXxxBlock(...)` 这类回调 DSL，让回调内部配置子对象后继续返回主对象，避免主链被 `object.child.xxx` 打断。
 - “一链到底”是 Jobs DSL 改造的终结标准：在一个 `jobsMakeXxx`、懒加载 getter 或配置闭包里，主对象变量名应尽量只作为链式起点出现一次，例如 `label.byText(...).byFont(...).addOn(...).byTop(...)`；后续不再散落 `label.xxx = ...`、`label.method(...)` 或第二段 `label.byXxx(...)`。
 - 当一条链中先调用父类 DSL 会导致返回类型降级时，必须先完成当前类本层 DSL，再进入父类 DSL；如果后续仍需要回到子类能力，应补充能返回主对象的 block DSL 或当前层 DSL，而不是拆成第二个接收者调用。
+- 在本地 Pod 里写 `UITableView`、`UIButton`、`UITextField`、`UILabel` 等 JobsOCDSL 链时，编译通过不是唯一目标，还要检查链条类型是否中途被父类 DSL 降级。例如 `UITableView` 先调 `bySeparatorStyle`、`byDelegate`、`byDataSource`、`byShowsVerticalScrollIndicator` 等本层 / `UIScrollView` 层能力，再调 `byBgColor`、`addOn`、`byAdd` 等 `UIView` 层能力；不要把父类 DSL 插在中间导致后续子类 DSL 失效。
 - 写 DSL 示例、Xcode 代码片段和工程配置文档时，点语法以行为最小单位提行书写，方便按行删除或注释。跟在某一行 DSL 后面的解释统一用两根双斜杠 `//`；单独成行的段落说明统一用三根双斜杠 `///`。
 - DSL 示例颗粒度必须细：一个属性、一个状态、一个事件、一个装配动作分别独立成行，不把标题、颜色、字体、图片、内边距等多个意图合并到一行。若同一能力同时存在单参数和二参数写法，默认首选单参数写法；二参数写法只在确实需要表达 `UIControlStateSelected`、`UIControlStateDisabled`、`UIControlStateHighlighted` 等非默认状态差异时使用。
 

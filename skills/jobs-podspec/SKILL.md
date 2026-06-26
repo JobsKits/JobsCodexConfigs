@@ -130,6 +130,9 @@ description: 当任务涉及 CocoaPods、Podspec、source_files、public_header_
   ```
 
 - 修改 podspec 后要重点检查：`spec.name` 是否和文件名一致、入口头是否真实存在、`Core` / `Support` glob 是否命中、依赖是否形成循环、资源是否被错误放进 `source_files`。
+- 但凡修改 podspec 或本地 Pod 的依赖 / 入口 / 公开文件，都必须回到整个归属工程做使用面扫描并同步更新调用方。扫描范围至少包括主工程源码、Demo 入口、`import` / `#import`、其它 podspec 的 `dependency`、`Podfile` / `Podfile.deps`、README / 技术文档和脚本中的 Pod 名；不能只通过 `ruby -c`、`pod ipc spec` 或 `pod install` 判断完成。生成物如 `Podfile.lock`、`PodspecDependencyReport` 若本轮未重新生成，最终回复必须说明它们仍可能保留旧引用。
+- 本地 Pod 修改后，`pod install` 成功只代表 CocoaPods 主流程没有中断，不代表 Pods 工程在 Xcode 里可用。必须继续验证 `Pods/Pods.xcodeproj` 能被 `xcodeproj` 打开、根对象仍是 `PBXProject`、目标 Pod target / scheme 存在、`Development Pods > Pod名` 能展开出 `Core` / `Support` / `Pod` / `Support Files`。如果 Xcode 左侧 Pod 名能看到但没有子项，优先排查 Podfile 脚本或 `JobsPodspecKit.rb` 是否写坏 group / file reference / UUID。
+- 建议把本地 Pod 可见性检查写成固定命令：`ruby -rxcodeproj -e 'p = Xcodeproj::Project.open("Pods/Pods.xcodeproj"); puts [p.root_object.isa, p.targets.find { |t| t.name == "Pod名" }&.name].join(" | ")'`，再用 `xcodebuild -workspace 工程.xcworkspace -list | rg "Pod名"` 验证 scheme。只有这两步都正常，才算解决“pod install 不报错但 Xcode 左侧不可展开”的问题。
 
 #### 1.6.1、`Podfile` / `Podfile.deps` 外部脚本防阻塞
 
@@ -137,6 +140,8 @@ description: 当任务涉及 CocoaPods、Podspec、source_files、public_header_
 - `Podfile` 里凡是调用外部脚本、`load` 外部 Ruby 文件、`.command`、`.sh`、`.rb` 或 `ScriptsByPods` 下的工具，都必须先判断文件是否存在。脚本不存在、`chmod +x` 失败或脚本执行失败时，默认只打印告警并 `return` / 跳过，不中断 `pod install` 主流程。
 - 只有用户明确要求某个脚本是强制门禁时，才允许用 `raise` 阻塞；否则依赖报告、CodeGraph、资源清理、Flutter/Unity 辅助脚本都按“可选增强，失败不阻塞”处理。
 - 新增脚本入口时优先封装统一 helper，例如 `jobs_run_external_script(...)` 或 `run_xxx_script`，不要在 Podfile 里散落裸 `system(script_path)`。
+- `post_install` / `post_integrate` 里如果需要修改 `Pods.xcodeproj`，只能做最小、可回滚、可跳过的增强，不能手写固定 UUID，也不要给根 group 硬塞 `Podfile.deps`、报告文件等非必要引用。历史上这类展示增强可能把 `PBXProject` 根 UUID 覆盖成 `PBXFileReference`，表现为 `pod install` 正常但 Xcode 左侧 Pods 无法展开。
+- 给 `Pods.xcodeproj` 增加展示文件时，必须先查重、确认不会复用 CocoaPods 已生成对象的 UUID，并在保存后立刻重新打开工程验证 `p.root_object.isa == "PBXProject"`。如果验证失败，宁可跳过该展示引用，也不要让 Pods 工程带病进入 Xcode。
 
 
 ### 1.7、`JobsPodspecKit.rb` / 样例 `*.podspec` 蒸馏规则

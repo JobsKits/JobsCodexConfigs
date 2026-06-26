@@ -20,9 +20,11 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 ### 1.1、Jobs DSL 总体思想
 
 - Jobs 的 Swift / OC DSL 本质是一套命名和调用思想：用点语法 + 链式语法让对象从创建、配置、事件、装配到布局尽量一路设置下去，减少散落赋值和割裂的中间变量。
+- Jobs DSL 的第一性是对系统 API 的二次封装。Swift / OC 两侧允许因语言、closure / Block、范型、可选值、返回类型等差异采用不同实现形态，但判断是否应该补 DSL 时，永远先看对应系统 API 是否属于当前类型的覆盖范围，而不是先看另一侧代码是否已经存在同形态实现。
 - Swift 侧 DSL 命名与 OC 侧保持同源：统一使用 `by` + 首字母大写的属性名、单参数方法名或一个参数语义名。例如 `text` 对应 `byText(...)`，`font` 对应 `byFont(...)`，`backgroundColor` 优先对应 `byBackgroundColor(...)`。
 - 遇到 `Bool` 属性且系统名以 `is` 开头时，DSL 名省略 `is`，例如 `isSelected` 写成 `bySelected(...)`，`isEnabled` 写成 `byEnabled(...)`，保持 Swift / OC 两侧命名平行。
 - DSL 覆盖范围不只限于 Apple 原生 API。Jobs 自建 Model、配置对象、业务基础对象也要按同一套思路封装；Swift 侧新增模型 DSL 时，应优先对齐 OC 侧 `JobsModelDSL` 的语义命名和调用方式。
+- 对系统 API 进行二次封装成 JobsSwiftDSL 时，覆盖标准是当前类型自己声明的全部属性、0 个入参数方法、1 个入参数方法。父类已有能力放在父类 DSL，不在子类重复铺开；有返回值的方法默认也要返回 `Self` / 当前主对象并标注 `@discardableResult`，除非该能力天然是查询或明确的终止动作。
 - Swift 虽然不需要像 OC 一样集中定义大量 Block typedef，但闭包参数命名、返回 `Self`、`@discardableResult` 和链式收口要保持稳定，让调用方可以一路点下去。除明确的终止动作外，Swift DSL 不写只执行副作用却返回 `Void` 的方法；优先返回 `Self` 或当前主对象类型，避免链条中途断掉。
 - Swift / OC 两侧面对同一个 Apple API 或同一个 Jobs 自建模型语义时，应尽量保持 DSL 名称、参数语义、调用顺序平行；发现一侧缺失时，优先补齐缺失侧，而不是在业务代码里回退到裸赋值。
 - 对“中心对象”配置时，优先围绕一个主接收者一路链式调用。需要配置子对象时，优先提供 `byXxxBlock(...)`、`byXxx { ... }` 或项目既有闭包入口，让闭包内部配置子对象后继续返回主对象，避免主链被 `object.child.xxx` 打断。
@@ -201,7 +203,13 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 - 这条规则只处理 Jobs 自己维护的 [**Swift**](https://www.swift.org/) 代码；外援 Pod 不处理，包括 `Pods/` 目录和 `JobsByPods/ManualBySwiftPods@Pods/` 目录。
 - 每次写 Swift 代码或批量改 Swift 文件后，如果触碰了 Jobs 自己维护的 `.swift` 文件，必须在目标范围内扫描 `}\nreturn` 和 `}return` 残留；优先使用 `rg -n -U "\\}\\n\\s*return\\b|\\}return\\b" <目标路径>`，命中后按本节规则修正。
 
-### 1.8、Swift 项目 `Podfile` / `Podfile.deps` 脚本边界
+### 1.8、本地 Swift Pod 修改后的工程同步扫描
+
+- 但凡修改本地 Swift Pod，不管是新增、删除、重命名、调整源码、公开 API、资源、podspec、`Podfile.deps` 还是依赖关系，都必须扫描整个 Swift 归属工程里使用到这个 Pod 的代码并同步更新。不能只改 `JobsByPods/Pod名@Pods` 目录，也不能只改 podspec。
+- 扫描范围至少包括主工程源码、Demo 入口、`import Pod名`、类型名 / 方法名调用、其它 Pod 的 podspec 依赖、`Podfile` / `Podfile.deps`、README / SwiftDoc / 技术文档和脚本中的 Pod 名。涉及重命名时，要同步处理目录名、文件名、类名、菜单文案和依赖声明，避免源码里留下旧名。
+- `Pods/`、`Podfile.lock`、`PodspecDependencyReport` 等生成物如果本轮没有执行 `pod install` 或报告生成流程，不手工硬改，但最终必须明确标出仍需刷新；如果执行了生成流程，则要把生成物里的旧 Pod 引用一起确认干净。
+
+### 1.9、Swift 项目 `Podfile` / `Podfile.deps` 脚本边界
 
 - Swift 项目的 `Podfile.deps` 只维护 `pod` 依赖定义，不直接执行外部脚本；外部脚本统一由 `Podfile` 调用，避免依赖清单掺入副作用。
 - `Podfile` 中所有 `ScriptsByPods`、`.command`、`.sh`、`.rb` 脚本调用，以及 `load` 外部 Ruby 文件，都必须先判断文件是否存在。脚本不存在、`chmod +x` 失败或脚本执行失败时，默认只打印告警并跳过，不影响 `pod install` 主流程。

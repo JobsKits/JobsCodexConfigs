@@ -1,4 +1,4 @@
-# 💻JobsCodexConfigs
+# `💻JobsCodexConfigs`
 
 ![Jobs出品，必属精品](https://picsum.photos/1500/400)
 
@@ -6,88 +6,214 @@
 
 ---
 
-## 一、项目定位
+## 🔥 <font id=前言>前言</font>
 
-`💻JobsCodexConfigs` 是 Jobs 本机 Codex 配置仓库，用于集中维护并单向部署 Codex 的全局指导文件与用户级 Skills。
+> `💻JobsCodexConfigs` 是 Jobs 本机 [**Codex**](https://openai.com/codex) 配置源仓库，负责集中维护全局指导文件 `AGENTS.md` 与用户级 Skills，并通过脚本单向部署到当前 MacOS 用户环境。
 
-核心目标只有一个：
-
-> 启动 `【MacOS】Codex配置注入替换工具.command` 后，把本仓库内的 `AGENTS.md` 与 `skills/` 部署到当前 MacOS 用户的固定位置。
-
-本仓库不做“从系统位置回写到仓库”的动作。脚本也不再维护多账户 `.codex` 来源目录，不会替换整个 `~/.codex`，只会覆盖 `~/.codex/AGENTS.md`、同步本仓库管理的 Skills，并在 `~/.codex/config.toml` 中维护一段 Jobs 受控的 `[[skills.config]]` 注册块，用于让 Codex++ 管理器可见。
+本仓库只做一件事：以仓库内容为源头，把 `AGENTS.md`、`skills/` 和受控的 Skills 注册块部署到本机固定位置。系统运行态文件不是源头，不从 `~/.codex` 或 `$HOME/.agents/skills` 反向回写到仓库。
 
 ---
 
-## 二、目录结构
+## 一、项目定位 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+`💻JobsCodexConfigs` 面向 Jobs 本机 Codex 工作流，核心目标如下：
+
+- 维护全局长期规则：仓库根目录 `AGENTS.md`。
+- 维护专项规则：仓库根目录 `skills/*/SKILL.md`。
+- 执行单向部署：`💻JobsCodexConfigs` → 当前 MacOS 用户固定目录。
+- 保留运行态配置：只维护 `~/.codex/config.toml` 中 Jobs 受控的 Skills 注册块，不整文件覆盖用户配置。
+
+本仓库不做这些事：
+
+- 不替换整个 `~/.codex`。
+- 不清空 `~/.codex`、日志、会话、数据库或登录态。
+- 不把 `~/.codex/AGENTS.md` 回写到仓库。
+- 不把 `$HOME/.agents/skills` 回写到仓库。
+- 不把所有专项规则重新塞回 `AGENTS.md`。
+
+---
+
+## 二、目录结构 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 ```text
 💻JobsCodexConfigs/
-├── AGENTS.md                                      # 全局指导源文件，部署到 ~/.codex/AGENTS.md
-├── skills/                                        # Jobs Skills 源目录，部署到 $HOME/.agents/skills
-│   ├── jobs-macos-shell/SKILL.md
-│   ├── jobs-git-repository/SKILL.md
-│   ├── jobs-markdown-docs/SKILL.md
-│   ├── jobs-podspec/SKILL.md
-│   ├── jobs-objective-c-pods/SKILL.md
-│   ├── jobs-swift/SKILL.md
-│   ├── jobs-python/SKILL.md
-│   └── jobs-dart-flutter/SKILL.md
-├── 【MacOS】Codex配置注入替换工具.command/
-│   ├── 【MacOS】Codex配置注入替换工具.command
-│   └── README.md
-├── config.toml（Token中转站的配置）.toml           # 中转站 / model provider 配置参考，不由脚本整文件部署
+├── AGENTS.md
+├── README.md
 ├── LICENSE
-├── .gitignore
-└── README.md
+├── icon.png
+├── config.toml（Token中转站的配置）.toml
+├── 【MacOS】Codex配置注入替换工具.command
+└── skills/
+    ├── jobs-dart-flutter/
+    │   └── SKILL.md
+    ├── jobs-git-repository/
+    │   └── SKILL.md
+    ├── jobs-macos-shell/
+    │   └── SKILL.md
+    ├── jobs-markdown-docs/
+    │   └── SKILL.md
+    ├── jobs-objective-c-pods/
+    │   └── SKILL.md
+    ├── jobs-podspec/
+    │   └── SKILL.md
+    ├── jobs-python/
+    │   └── SKILL.md
+    └── jobs-swift/
+        └── SKILL.md
 ```
+
+关键文件说明：
+
+| 文件 / 目录 | 作用 |
+| --- | --- |
+| `AGENTS.md` | Codex 全局指导源文件，部署到 `~/.codex/AGENTS.md`。 |
+| `skills/` | Jobs 用户级 Skills 源目录，部署到 `$HOME/.agents/skills`。 |
+| `【MacOS】Codex配置注入替换工具.command` | 一键注入脚本，负责检查环境、部署配置、注册 Skills、重启 Codex。 |
+| `config.toml（Token中转站的配置）.toml` | Token 中转站 / model provider 配置参考，不由脚本整文件部署。 |
+| `README.md` | 本仓库说明文档，也是脚本运行前展示的主要自述。 |
 
 ---
 
-## 三、脚本根目录识别说明
+## 三、部署目标 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-`【MacOS】Codex配置注入替换工具.command` 文件推荐放在同名文件夹内：
-
-```text
-💻JobsCodexConfigs/【MacOS】Codex配置注入替换工具.command/【MacOS】Codex配置注入替换工具.command
-```
-
-真实运行时，脚本会从自身所在目录开始向上查找，定位到同时包含 `AGENTS.md` 与 `skills/` 的 `💻JobsCodexConfigs` 根目录。也就是说，脚本隔着同名文件夹运行时，会自动向上跳一层，不会把脚本文件夹误判为配置仓库根目录。
-
----
-
-## 四、部署位置
-
-| 仓库来源 | 系统目标位置 | 行为 |
+| 仓库来源 | 系统目标位置 | 部署行为 |
 | --- | --- | --- |
-| `AGENTS.md` | `~/.codex/AGENTS.md` | 创建 `~/.codex` 后覆盖写入该文件。 |
+| `AGENTS.md` | `~/.codex/AGENTS.md` | 创建 `~/.codex` 后覆盖写入全局指导文件。 |
 | `skills/*` | `$HOME/.agents/skills/*` | 逐个部署 Skill；同名 Skill 替换，其它 Skill 保留。 |
+| `skills/*/SKILL.md` | `~/.codex/config.toml` | 删除并重写 Jobs 受控的 `[[skills.config]]` 注册块。 |
 
-可通过环境变量临时改目标：
+可以用环境变量临时改目标：
 
 ```shell
 TARGET_CODEX_DIR="/Users/jobs/.codex" \
 TARGET_SKILLS_DIR="/Users/jobs/.agents/skills" \
+TARGET_CODEX_CONFIG="/Users/jobs/.codex/config.toml" \
 ./"【MacOS】Codex配置注入替换工具.command"
 ```
 
-一般不需要改，默认位置就是当前 MacOS 用户的固定位置。
+一般不需要改，默认位置就是当前 MacOS 用户固定位置。
 
 ---
 
-## 五、Codex 固定位置说明
+## 四、运行方式 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-### 5.1、全局指导文件
+### 4.1、双击运行
+
+- 在 [**Finder**](https://support.apple.com/guide/mac-help/welcome/mac) 中双击：
+
+  ```text
+  【MacOS】Codex配置注入替换工具.command
+  ```
+
+- 脚本启动后会先展示内置自述和本 `README.md`，确认无误后按回车继续。
+- 确认前按 `Ctrl+C` 可以取消，不会继续执行部署流程。
+
+### 4.2、终端运行
+
+```shell
+cd "/Users/jobs/Documents/Github/JobsConfigOS/💻JobsCodexConfigs"
+chmod +x "【MacOS】Codex配置注入替换工具.command"
+./"【MacOS】Codex配置注入替换工具.command"
+```
+
+### 4.3、静态检查
+
+修改脚本后，至少执行一次语法检查：
+
+```shell
+zsh -n "【MacOS】Codex配置注入替换工具.command"
+```
+
+---
+
+## 五、执行前检查 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+执行脚本前建议确认：
+
+| 检查项 | 说明 |
+| --- | --- |
+| 仓库位置 | 当前目录必须能向上定位到同时包含 `AGENTS.md` 与 `skills/` 的仓库根目录。 |
+| `AGENTS.md` | 必须存在，作为全局指导源文件。 |
+| `skills/*/SKILL.md` | 至少存在一个 Skill，且每个待部署 Skill 目录中必须有 `SKILL.md`。 |
+| [**Homebrew**](https://brew.sh/) | 脚本会检测；不存在时会询问是否安装。 |
+| [**fzf**](https://formulae.brew.sh/formula/fzf) | 用于 Codex++ 启动入口选择；不存在时会询问是否安装。 |
+| [**Codex**](https://openai.com/codex) | 脚本会检查 App、CLI 或 Homebrew Cask；缺失时会询问是否安装。 |
+
+涉及升级或安装的动作都需要用户交互确认；直接回车会跳过可选升级 / 自检项。
+
+---
+
+## 六、脚本执行流程 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+```mermaid
+flowchart TD
+  A[显示内置自述和 README.md] --> B[初始化日志和清理钩子]
+  B --> C[检查 AGENTS.md 与 skills 目录]
+  C --> D[检查 Homebrew]
+  D --> E[检查 fzf]
+  E --> F[检查 Codex App / CLI / Cask]
+  F --> G[停止 Codex 运行态]
+  G --> H[部署 AGENTS.md 到 ~/.codex/AGENTS.md]
+  H --> I[部署 skills 到 $HOME/.agents/skills]
+  I --> J[更新 ~/.codex/config.toml 受控 Skills 注册块]
+  J --> K[再次停止旧运行态]
+  K --> L{是否检测到 Codex++}
+  L -- 是 --> M[fzf 选择 Codex++ / 管理工具 / 官方 Codex]
+  L -- 否 --> N[启动官方 Codex]
+  M --> O[输出完成摘要和日志位置]
+  N --> O
+```
+
+脚本主要动作：
+
+1. 展示 `README.md`，按回车后继续。
+2. 校验工具包结构。
+3. 检查 [**Homebrew**](https://brew.sh/)、[**fzf**](https://formulae.brew.sh/formula/fzf)、[**Codex**](https://openai.com/codex)。
+4. 停止当前 Codex 运行态，避免运行中读取旧配置。
+5. 覆盖部署 `AGENTS.md` 到 `~/.codex/AGENTS.md`。
+6. 部署 `skills/*` 到 `$HOME/.agents/skills/*`。
+7. 更新 `~/.codex/config.toml` 中 Jobs 受控的 Skills 注册块。
+8. 根据本机是否存在 Codex++，选择增强入口或官方 Codex 启动。
+
+---
+
+## 七、Skills 索引 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+本仓库把全局规则拆成“全局入口 + 专项 Skill”。全局长期行为写入 `AGENTS.md`，具体技术栈规则写入对应 `skills/<skill-name>/SKILL.md`。
+
+| Skill | 适用场景 |
+| --- | --- |
+| `jobs-macos-shell` | MacOS 原生 Shell、zsh、`.sh`、`.command`、内置自述、防误触确认、函数拆分、`main` 入口、[**Homebrew**](https://brew.sh/)、自检、批量脚本、压缩包输出或 Sourcetree 自定义动作脚本。 |
+| `jobs-git-repository` | `JobsMacEnvVarConfigs`、[**Git**](https://git-scm.com/) 仓库结构、安装与升级入口、仓库级配置同步规则。 |
+| `jobs-markdown-docs` | [**Markdown**](https://markdown.cn)、`README.md`、技术文档、表格、流程图、外链、专有名词链接、文档封面和文档结构。 |
+| `jobs-podspec` | [**CocoaPods**](https://cocoapods.org/)、`*.podspec`、`source_files`、`public_header_files`、`resource_bundles`、`xcconfig`、`JobsPodspecKit.rb` 或本地 Pod 发布配置。 |
+| `jobs-objective-c-pods` | [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html)、本地 Pods、Core / Support、头文件引用、Pod 拆分、`JobsDefineProperty`、`JobsOCDSL`、`JobsModelDSL`、`JobsBlock`、`JobsMake`、`import` 排序或 [**Xcode**](https://developer.apple.com/xcode) Markdown 引用。 |
+| `jobs-swift` | [**Swift**](https://www.swift.org/)、Swift 文件组织、`JobsSwiftDSL`、点语法链式调用、懒加载、[**SnapKit**](https://github.com/SnapKit/SnapKit)、导航栏配置、控制器组织或 Swift `return self` 收口。 |
+| `jobs-python` | [**Python**](https://www.python.org)、脚本、命令行入口、日志、异常、依赖、格式化、lint 或测试规则。 |
+| `jobs-dart-flutter` | [**Dart**](https://dart.dev)、[**Flutter**](https://flutter.dev/)、Widget 拆分、状态管理、路由、资源、iOS / Android 打包、Gradle、Flutter SDK 或代码生成。 |
+
+维护原则：
+
+- 命中某类任务时，优先加载对应 Skill 的完整规则。
+- 多领域任务可以组合多个 Skill，例如整理 `.command` 并写 `README.md` 时，同时参考 `jobs-macos-shell` 和 `jobs-markdown-docs`。
+- Skill 内规则与 `AGENTS.md` 冲突时，`AGENTS.md` 只管全局边界，具体工程实践以对应 Skill 为准。
+
+---
+
+## 八、Codex 位置说明 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+### 8.1、全局指导文件
 
 | 位置 | 说明 |
 | --- | --- |
 | `~/.codex/AGENTS.md` | Codex 全局指导文件。脚本会用本仓库根目录 `AGENTS.md` 覆盖部署到这里。 |
-| `~/.codex/AGENTS.override.md` | 临时全局覆盖文件。如果存在，Codex 会优先读取它。正常长期规则不建议写这里。 |
+| `~/.codex/AGENTS.override.md` | 临时全局覆盖文件。正常长期规则不建议写这里。 |
 | `<repo>/AGENTS.md` | 仓库级指导文件，适合某个具体项目的规则。 |
-| `<repo>/子目录/AGENTS.md` 或 `AGENTS.override.md` | 子目录级规则，越靠近当前工作目录越具体。 |
+| `<repo>/子目录/AGENTS.md` | 子目录级规则，越靠近当前工作目录越具体。 |
 
-注意：`~/.codex/AGENTS.md` 是全局指导文件位置，不是 Skills 主目录。
+`~/.codex/AGENTS.md` 是全局指导文件位置，不是 Skills 主目录。
 
-### 5.2、Skills 位置
+### 8.2、Skills 位置
 
 | 位置 | 作用 |
 | --- | --- |
@@ -96,146 +222,90 @@ TARGET_SKILLS_DIR="/Users/jobs/.agents/skills" \
 | `/etc/codex/skills` | 管理员级 Skills，适合机器级共享。 |
 | Codex 内置 | 系统级 Skills，由 Codex 自带。 |
 
-Skill 的基本结构：
+Skill 基本结构：
 
 ```text
 skill-name/
 └── SKILL.md
 ```
 
-`SKILL.md` 必须包含 `name` 和 `description` 元数据。Codex 会先读取技能名称、描述和路径，只有命中任务时才加载完整 `SKILL.md`，这样可以减少全局上下文负担。
+`SKILL.md` 必须包含 `name` 和 `description` 元数据。Codex 会先读取技能名称、描述和路径，只有命中任务时才加载完整 `SKILL.md`。
 
-### 5.3、Codex++ 管理器可见性
+### 8.3、Codex++ 管理器可见性
 
 官方 Codex 会从 `$HOME/.agents/skills` 扫描用户级 Skills。Codex++ 管理器的「工具与插件 / Skills」页签通常展示 `~/.codex/config.toml` 中的 `[[skills.config]]` 条目。
 
-因此，本脚本会在 `~/.codex/config.toml` 追加并维护如下受控块：
+脚本会维护如下受控块：
 
 ```toml
 # >>> JobsCodexConfigs managed skills >>>
+# 由 JobsCodexConfigs 单向部署脚本生成。
+# 目的：让 Codex++ 管理器的 Skills 页签识别本仓库部署到用户级目录的 Skills。
+# 官方 Codex 的真实 Skill 文件仍位于：/Users/xxx/.agents/skills
+
 [[skills.config]]
 path = "/Users/xxx/.agents/skills/jobs-swift/SKILL.md"
 enabled = true
 # <<< JobsCodexConfigs managed skills <<<
 ```
 
-脚本只更新这段受控块，不会删除用户自己写的 MCP、provider、plugins、projects 等配置。
-
-### 5.4、`~/.codex` 常见内容
-
-| 文件 / 目录 | 说明 | 建议 |
-| --- | --- | --- |
-| `config.toml` | Codex 用户配置，例如模型、provider、sandbox、approval、hooks、skills.config 等。 | 脚本不会整文件覆盖，但会维护一段 Jobs 受控的 Skills 注册块。确需管理其它配置时手动处理，注意密钥不要明文入库。 |
-| `AGENTS.md` | 全局指导文件。 | 由本仓库根目录 `AGENTS.md` 单向部署。 |
-| `state_5.sqlite` | Codex 运行状态 SQLite 数据库文件。它是数据库文件，不是普通可手写配置。 | 不建议手动编辑，也不由本脚本部署。 |
-| `logs*.sqlite` | Codex 日志数据库。 | 通常不需要入库。 |
-| `sessions/` | Codex 会话数据。 | 体积可能较大，通常不入库。 |
-| `auth*` / `credentials*` / token 相关文件 | 登录态或认证相关文件。 | 可能含敏感信息，不要随意提交远程仓库。 |
+脚本只删除并重写这段受控块，保留用户自己维护的 MCP、provider、plugin、projects 等配置。
 
 ---
 
-## 六、脚本部署行为
+## 九、风险说明 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-运行：
+本脚本会修改当前用户环境，风险边界如下：
+
+| 动作 | 风险 | 说明 |
+| --- | --- | --- |
+| 覆盖 `~/.codex/AGENTS.md` | 中 | 目标文件会被本仓库 `AGENTS.md` 覆盖。 |
+| 替换 `$HOME/.agents/skills/<同名 Skill>` | 中 | 同名 Skill 目录会先删除再部署；不同名 Skill 保留。 |
+| 更新 `~/.codex/config.toml` 受控块 | 低 | 只更新 `# >>> JobsCodexConfigs managed skills >>>` 到 `# <<< JobsCodexConfigs managed skills <<<` 之间内容。 |
+| 停止 Codex 运行态 | 中 | 会尝试退出 `Codex` / `codex` 进程，必要时强制终止旧进程。 |
+| 安装或升级工具 | 中 | [**Homebrew**](https://brew.sh/)、[**fzf**](https://formulae.brew.sh/formula/fzf)、Codex Cask 安装或升级都需要交互确认。 |
+
+脚本不会清空 `~/.codex`，不会删除 Codex 会话、日志、数据库、登录态，也不会把系统运行态文件回写到仓库。
+
+---
+
+## 十、日志与排查 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+日志文件位于：
+
+```text
+/tmp/【MacOS】Codex配置注入替换工具.log
+```
+
+常用排查命令：
 
 ```shell
-cd "💻JobsCodexConfigs/【MacOS】Codex配置注入替换工具.command"
-chmod +x "【MacOS】Codex配置注入替换工具.command"
-./"【MacOS】Codex配置注入替换工具.command"
+tail -n 120 "/tmp/【MacOS】Codex配置注入替换工具.log"
+zsh -n "【MacOS】Codex配置注入替换工具.command"
+ls -la "$HOME/.codex"
+ls -la "$HOME/.agents/skills"
 ```
 
-脚本主要做这些事：
+常见问题：
 
-1. 展示脚本目录下的 `README.md`，按回车后继续。
-2. 检查工具包结构：必须存在 `AGENTS.md` 与 `skills/*/SKILL.md`。
-3. 检查 Homebrew、fzf、Codex 环境。
-4. 停止当前 Codex 运行态，避免运行中读取旧配置。
-5. 创建 `~/.codex`，并用本仓库 `AGENTS.md` 覆盖 `~/.codex/AGENTS.md`。
-6. 把本仓库 `skills/*` 部署到 `$HOME/.agents/skills/*`。
-7. 部署完成后重启 Codex：如果检测到 Codex++，使用 fzf 选择启动入口；如果没有 Codex++，启动官方 Codex。
-
-脚本不会做这些事：
-
-- 不会维护或读取多账户配置来源目录。
-- 不会替换整个 `~/.codex`。
-- 不会压缩、删除、清空已有 `~/.codex`。
-- 不会整文件覆盖 `~/.codex/config.toml`，只会删除并重写 Jobs 受控的 Skills 注册块；不会修改 `state_5.sqlite`、日志、会话、认证文件。
-- 不会把 `~/.codex/AGENTS.md` 回写到本仓库 `AGENTS.md`。
-- 不会把 `$HOME/.agents/skills` 回写到本仓库 `skills/`。
-
----
-
-## 七、执行流程
-
-```mermaid
-flowchart TD
-  A[显示 README.md] --> B[检查工具包结构]
-  B --> C[检查 Homebrew]
-  C --> D[检查 fzf 并做健康体检]
-  D --> E[检查 Codex]
-  E --> F[停止 Codex 运行态]
-  F --> G[创建 ~/.codex]
-  G --> H[覆盖 ~/.codex/AGENTS.md]
-  H --> I[部署 skills 到 $HOME/.agents/skills]
-  I --> J{是否存在 Codex++}
-  J -- 是 --> K[fzf 选择 Codex++ / 管理工具 / 官方 Codex]
-  J -- 否 --> L[启动官方 Codex]
-  K --> M[完成]
-  L --> M[完成]
-```
-
----
-
-## 八、Skills 拆分说明
-
-原 `AGENTS.md` 中的大量专项规则已拆分为独立 Skills：
-
-| Skill | 适用场景 |
+| 问题 | 处理方式 |
 | --- | --- |
-| `jobs-macos-shell` | MacOS Shell、zsh、`.command`、Homebrew、fzf、自检、批量脚本。 |
-| `jobs-git-repository` | Git 仓库结构、JobsMacEnvVarConfigs、安装与升级入口规则。 |
-| `jobs-markdown-docs` | Markdown、README、技术文档、表格、流程图、固定外链。 |
-| `jobs-podspec` | CocoaPods、Podspec、source、资源、依赖、xcconfig。 |
-| `jobs-objective-c-pods` | Objective-C、本地 Pods、Core/Support、头文件、JobsOCDSL、JobsMake。 |
-| `jobs-swift` | Swift 文件基座、懒加载、SnapKit、导航栏、控制器组织。 |
-| `jobs-python` | Python 脚本、命令行、日志、异常、依赖、测试。 |
-| `jobs-dart-flutter` | Dart / Flutter 页面、状态、路由、资源、打包、代码生成。 |
-
-后续维护建议：
-
-- 全局长期行为写 `AGENTS.md`。
-- 具体技术栈、脚本规范、文档规范写对应 `skills/<skill-name>/SKILL.md`。
-- 不要把所有 Skill 内容重新塞回 `AGENTS.md`，否则会失去拆分意义。
+| 找不到 `AGENTS.md` 或 `skills/` | 确认脚本位于 `💻JobsCodexConfigs` 仓库内，或可从脚本所在目录向上找到仓库根目录。 |
+| `fzf` 菜单无法显示 | 建议双击 `.command` 或在完整 Terminal TTY 中运行。 |
+| Codex++ 未出现 | 脚本会回退启动官方 Codex；也可以手动打开 `/Applications/Codex++.app` 或 `~/Applications/Codex++.app`。 |
+| `config.toml` 注册不显示 | 确认 `~/.codex/config.toml` 中存在 Jobs 受控块，并确认对应 `SKILL.md` 路径存在。 |
+| Skill 内容没生效 | 确认 `$HOME/.agents/skills/<skill-name>/SKILL.md` 已更新，并重启 Codex。 |
 
 ---
 
-## 九、Codex++ 启动说明
-
-脚本部署完成后会重启 Codex。重启逻辑如下：
-
-1. 先停止当前运行中的 Codex / codex 进程。
-2. 检测固定 MacOS 应用路径：
-   - `/Applications/Codex++.app`
-   - `/Applications/Codex++ 管理工具.app`
-   - `~/Applications/Codex++.app`
-   - `~/Applications/Codex++ 管理工具.app`
-3. 如果检测到 Codex++，使用 fzf 显示可启动入口，用户上下选择后启动。
-4. 如果未检测到 Codex++，直接启动官方 Codex：
-   - 优先 `/Applications/Codex.app`
-   - 其次 `~/Applications/Codex.app`
-   - 最后兜底 `open -a Codex`
-
----
-
-## 十、维护原则
+## 十一、维护原则 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 - 本仓库是源头，系统固定位置是部署目标。
-- 部署是单向的：`💻JobsCodexConfigs` → 当前 MacOS 用户环境。
+- 部署方向固定为：`💻JobsCodexConfigs` → 当前 MacOS 用户环境。
+- 长期全局行为写 `AGENTS.md`。
+- 专项技术栈规则写对应 `skills/<skill-name>/SKILL.md`。
+- 修改专项规则后，通过脚本部署到 `$HOME/.agents/skills`。
 - 运行态数据库、日志、会话、认证文件不归本脚本管理。
-- 修改脚本后至少执行静态检查：
-
-  ```shell
-  zsh -n "【MacOS】Codex配置注入替换工具.command/【MacOS】Codex配置注入替换工具.command"
-  ```
+- 修改脚本后执行 `zsh -n`，确认语法通过再运行。
 
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
