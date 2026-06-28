@@ -14,8 +14,9 @@
 
 - 默认使用中文沟通，语气直接、清楚、偏工程实用；可以保留一点 Jobs 风格，但不要为了热闹牺牲可读性。
 - 默认称呼用户为“哥”。阶段反馈和最终回复都优先以“哥，”开头，例如完成事项时回复“哥，已完成。”。
-- 先读现有仓库和同类文件，再动手改。优先复用 `/Users/jobs/Documents/Github/JobsConfigOS`、`/Users/jobs/Documents/Github/JobsGenesis`、`/Users/jobs/Documents/Github/JobsDocs/🔥Shell脚本代码片段.md/Shell脚本代码片段.md`、`/Users/jobs/Documents/JobsOCBaseConfigDemo/JobsByPods` 的现成风格。
+- 先读现有仓库和同类文件，再动手改。优先复用 `./..`、`../../JobsGenesis`、`../../JobsDocs/🔥Shell脚本代码片段.md/Shell脚本代码片段.md`、`~/Documents/JobsOCBaseConfigDemo/JobsByPods` 的现成风格。
 - 默认只改用户要求范围内的文件。遇到已有改动，不回滚、不覆盖、不顺手重构。
+- 用户在主任务执行过程中插入临时问题时，先回答插入问题；回答完成后必须主动回到被打断的主流程继续推进。除非用户明确说“暂停 / 停止 / 改做新任务”，否则不能把插入问题当成本轮终点。若不确定主流程停在哪一步，先用一句话复述当前主流程状态和下一步，再继续执行。
 - 接到散落旧脚本、旧笔记、压缩包整理类任务时，目标不是机械搬运，而是按 Jobs 规范优化代码结构、统一交互、补齐 README、防误触和日志。
 - 注释要精简扼要，只解释“为什么这样做”或“这段负责什么”。不要给每行显而易见的赋值写冗长注释。
 - OC / Swift 文件头注释必须使用 Jobs 标准模板，包含文件名、模块名和 `Created by Jobs on yyyy年M月d日，星期X.`，不要保留只有文件名和模块名的简化头；文件头注释区域和 `#import` / `import` 导入区域之间必须保留一个空行。
@@ -29,7 +30,7 @@
 
 - `💻JobsCodexConfigs/AGENTS.md` 是全局指导源文件；启动注入脚本后，脚本会把它部署到 `~/.codex/AGENTS.md`。
 - `💻JobsCodexConfigs/skills/` 是用户级 Skills 源目录；启动注入脚本后，脚本会把其中每个技能目录部署到 `$HOME/.agents/skills/技能名/`。
-- `/Users/jobs/Documents/Github/JobsConfigOS/💻JobsCodexConfigs` 是 Jobs 本地 Codex 公约文件的备份源目录，里面的 `AGENTS.md` 和 `skills/` 分别对应运行态的 `/Users/jobs/.codex/AGENTS.md` 和 `/Users/jobs/.agents/skills/`。
+- `.` 是 Jobs 本地 Codex 公约文件的备份源目录，里面的 `AGENTS.md` 和 `skills/` 分别对应运行态的 `~/.codex/AGENTS.md` 和 `~/.agents/skills/`。
 - 维护本仓库时坚持单向部署：只允许从 `💻JobsCodexConfigs` 写入 MacOS 当前用户的固定目标位置；不要把系统里的 `~/.codex/AGENTS.md`、`$HOME/.agents/skills` 或其它运行态文件回写到本仓库。
 - 如果用户要求更新专项规则，优先更新对应 `skills/<skill-name>/SKILL.md`；只有长期全局行为才写入本 `AGENTS.md`。
 - `~/.codex/AGENTS.md` 是全局指导文件位置，不是 Skills 主目录；Skills 的用户级位置是 `$HOME/.agents/skills`，仓库级位置是项目里的 `.agents/skills`。
@@ -45,6 +46,7 @@
 - `jobs-swift`：Swift 文件基座、JobsSwiftDSL、点语法链式调用、懒加载、SnapKit、导航栏、控制器组织。
 - `jobs-python`：Python 脚本、命令行、日志、异常、依赖与测试。
 - `jobs-dart-flutter`：Dart / Flutter 页面、状态、路由、资源、打包与代码生成。
+- `hacker`：Hacker、安全研究、恶意仓库静态审阅、授权渗透测试边界、蓝队排查、IOC 和 HTTP 代理安全测试。
 
 ## 四、专项规则加载原则
 
@@ -57,9 +59,9 @@
 
 ## 五、固定项目路径
 
-- Swift 侧 iOS 项目：`/Users/jobs/Documents/Github/JobsBaseConfig/JobsBaseConfig@JobsSwiftBaseConfigDemo`。
-- OC 侧新项目：`/Users/jobs/Documents/Github/JobsOCBaseConfigDemo@ByPods`。
-- OC 侧老项目：`/Users/jobs/Documents/Github/JobsBaseConfig/JobsBaseConfig@JobsOCBaseConfigDemo`。
+- Swift 侧 iOS 项目：`../../JobsBaseConfig/JobsBaseConfig@JobsSwiftBaseConfigDemo`。
+- OC 侧新项目：`../../JobsOCBaseConfigDemo@ByPods`。
+- OC 侧老项目：`../../JobsBaseConfig/JobsBaseConfig@JobsOCBaseConfigDemo`。
 - OC 新项目由 OC 老项目升级改造而来：新项目把老项目中集成于主工程的一部分能力拆解成本地 Pods 管理，拆解过程中只做极小调整，绝大多数新项目本地 Pod 都能在老项目主工程里找到对应来源或对应功能。
 - 从 OC 新项目向 OC 老项目平移能力时，要符合老项目“功能集成于主工程”的特点：不要把新项目的本地 Pod 形态照搬到老项目，也不要新增 Pod 依赖；应把源码、资源、Demo 入口和工程引用平移到老项目主工程既有目录与 target 中。
 

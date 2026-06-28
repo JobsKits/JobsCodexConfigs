@@ -97,11 +97,7 @@ initialize_script_runtime() {
   trap cleanup_temp_dirs EXIT INT TERM
 }
 # 展示脚本用途和影响范围，并在执行前等待用户确认。
-show_readme_and_wait() {
-  local readme_path="${SCRIPT_DIR}/README.md"
-  if [[ ! -f "$readme_path" && -f "${TOOLKIT_DIR}/README.md" ]]; then
-    readme_path="${TOOLKIT_DIR}/README.md"
-  fi
+show_script_intro_and_wait() {
 
   clear
   print -r -- '============================== 脚本内置自述 =============================='
@@ -110,16 +106,8 @@ show_readme_and_wait() {
   print -r -- '影响范围：可能安装、更新或修改当前用户的工具链与配置文件。'
   print -r -- '取消方式：确认前按 Ctrl+C 终止，不会继续执行后续业务。'
   print -r -- '============================================================================'
-  if [[ -f "$readme_path" ]]; then
-    highlight_echo "============================== README.md =============================="
-    cat "$readme_path" | tee -a "$LOG_FILE"
-    highlight_echo "======================================================================="
-  else
-    warn_echo "未找到 README.md，继续执行内置流程说明。"
-  fi
   echo ""
-  local answer=""
-  read -r "?👉 已阅读自述文件，按回车继续执行；按 Ctrl+C 取消：" answer
+  read -r "?👉 已了解脚本用途与影响，按回车继续；按 Ctrl+C 取消：" _
 }
 # 收集并校验用户输入，决定后续执行路径。
 ask_any_to_run() {
@@ -705,7 +693,7 @@ print_finish_summary() {
 # 编排脚本的高层业务流程。
 main() {
   # 展示脚本内置自述，并按运行入口完成防误触确认。
-  show_readme_and_wait
+  show_script_intro_and_wait
   # 初始化 Shell 选项、日志和退出清理钩子。
   initialize_script_runtime
   # 检查当前环境与执行条件是否满足脚本要求。

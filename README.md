@@ -85,9 +85,9 @@
 可以用环境变量临时改目标：
 
 ```shell
-TARGET_CODEX_DIR="/Users/jobs/.codex" \
-TARGET_SKILLS_DIR="/Users/jobs/.agents/skills" \
-TARGET_CODEX_CONFIG="/Users/jobs/.codex/config.toml" \
+TARGET_CODEX_DIR="~/.codex" \
+TARGET_SKILLS_DIR="~/.agents/skills" \
+TARGET_CODEX_CONFIG="~/.codex/config.toml" \
 ./"【MacOS】Codex配置注入替换工具.command"
 ```
 
@@ -111,7 +111,7 @@ TARGET_CODEX_CONFIG="/Users/jobs/.codex/config.toml" \
 ### 4.2、终端运行
 
 ```shell
-cd "/Users/jobs/Documents/Github/JobsConfigOS/💻JobsCodexConfigs"
+cd "."
 chmod +x "【MacOS】Codex配置注入替换工具.command"
 ./"【MacOS】Codex配置注入替换工具.command"
 ```
@@ -219,7 +219,7 @@ flowchart TD
 | --- | --- |
 | `$HOME/.agents/skills` | 用户级 Skills。脚本会把本仓库 `skills/` 下的每个技能目录部署到这里。 |
 | `<repo>/.agents/skills` | 仓库级 Skills，适合项目团队共享。 |
-| `/etc/codex/skills` | 管理员级 Skills，适合机器级共享。 |
+| `$SYSTEM_CONFIG_DIR/codex/skills` | 管理员级 Skills，适合机器级共享。 |
 | Codex 内置 | 系统级 Skills，由 Codex 自带。 |
 
 Skill 基本结构：
@@ -241,10 +241,10 @@ skill-name/
 # >>> JobsCodexConfigs managed skills >>>
 # 由 JobsCodexConfigs 单向部署脚本生成。
 # 目的：让 Codex++ 管理器的 Skills 页签识别本仓库部署到用户级目录的 Skills。
-# 官方 Codex 的真实 Skill 文件仍位于：/Users/xxx/.agents/skills
+# 官方 Codex 的真实 Skill 文件仍位于：$HOME/.agents/skills
 
 [[skills.config]]
-path = "/Users/xxx/.agents/skills/jobs-swift/SKILL.md"
+path = "$HOME/.agents/skills/jobs-swift/SKILL.md"
 enabled = true
 # <<< JobsCodexConfigs managed skills <<<
 ```
@@ -274,13 +274,13 @@ enabled = true
 日志文件位于：
 
 ```text
-/tmp/【MacOS】Codex配置注入替换工具.log
+$TMPDIR/【MacOS】Codex配置注入替换工具.log
 ```
 
 常用排查命令：
 
 ```shell
-tail -n 120 "/tmp/【MacOS】Codex配置注入替换工具.log"
+tail -n 120 "$TMPDIR/【MacOS】Codex配置注入替换工具.log"
 zsh -n "【MacOS】Codex配置注入替换工具.command"
 ls -la "$HOME/.codex"
 ls -la "$HOME/.agents/skills"
@@ -292,7 +292,7 @@ ls -la "$HOME/.agents/skills"
 | --- | --- |
 | 找不到 `AGENTS.md` 或 `skills/` | 确认脚本位于 `💻JobsCodexConfigs` 仓库内，或可从脚本所在目录向上找到仓库根目录。 |
 | `fzf` 菜单无法显示 | 建议双击 `.command` 或在完整 Terminal TTY 中运行。 |
-| Codex++ 未出现 | 脚本会回退启动官方 Codex；也可以手动打开 `/Applications/Codex++.app` 或 `~/Applications/Codex++.app`。 |
+| Codex++ 未出现 | 脚本会回退启动官方 Codex；也可以手动打开 `$APPLICATIONS_DIR/Codex++.app` 或 `~/Applications/Codex++.app`。 |
 | `config.toml` 注册不显示 | 确认 `~/.codex/config.toml` 中存在 Jobs 受控块，并确认对应 `SKILL.md` 路径存在。 |
 | Skill 内容没生效 | 确认 `$HOME/.agents/skills/<skill-name>/SKILL.md` 已更新，并重启 Codex。 |
 

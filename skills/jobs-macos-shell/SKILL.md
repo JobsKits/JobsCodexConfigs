@@ -22,7 +22,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
 - 新写或升级脚本时，默认使用：
 
   ```shell
-  #!/bin/zsh
+  # shell: zsh
   ```
 
 - 默认添加：
@@ -37,7 +37,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")" && pwd)"
   SCRIPT_PATH="${SCRIPT_DIR}/$(basename -- "$0")"
   SCRIPT_BASENAME=$(basename "$0" | sed 's/\.[^.]*$//')
-  LOG_FILE="/tmp/${SCRIPT_BASENAME}.log"
+  LOG_FILE="$TMPDIR/${SCRIPT_BASENAME}.log"
   : > "$LOG_FILE"
   ```
 
@@ -82,21 +82,21 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
   underline_echo() { log "\033[4m$1\033[0m"; }            # 下划线
   ```
 
-- 终端输出和日志落盘必须同步，排查时能直接看 `/tmp/脚本名.log`。
+- 终端输出和日志落盘必须同步，排查时能直接看 `$TMPDIR/脚本名.log`。
 - 成功、警告、错误要有明确前缀。失败分支不要静默吞掉，至少输出失败命令或目标路径。
 
 ### 1.3、交互约定
 
 - MacOS `.sh` / `.command` 脚本统一采用“三层自述”标准，三层各自服务不同场景，不能互相替代：
   1. **外部 README 自述**：脚本所在目录可配套 `README.md`，与主脚本平级，用中文描述脚本行为特征、适用场景、运行方式、风险边界、日志位置和常见问题；它面向运行前阅读。是否新增 README 取决于用户要求、现有目录约定和脚本复杂度，但已存在时必须随脚本行为同步维护。
-  2. **脚本头部注释自述**：脚本文件内部在 shebang（例如 `#!/bin/zsh`）下一行必须紧跟一段注释自述；这段注释不参与运行时输出，用于打开源码时快速理解脚本名称、核心用途、影响范围和运行提示。
+  2. **脚本头部注释自述**：脚本文件内部在 shebang（例如 `# shell: zsh`）下一行必须紧跟一段注释自述；这段注释不参与运行时输出，用于打开源码时快速理解脚本名称、核心用途、影响范围和运行提示。
   3. **运行时内置自述**：脚本运行后第一件事必须打印写死在脚本内部的自述正文；无论后续流程是安装、清理、Git 操作、打包还是打开应用，都必须先展示脚本名称、核心用途、影响范围、取消方式/运行策略和日志位置，再根据运行入口决定是否等待回车。
 - 运行时内置自述必须直接写在脚本函数中，例如 `show_script_intro_and_wait()`；不能只 `cat README.md`，也不能只依赖脚本头部注释。
 - `show_script_intro_and_wait()` 不得在运行时读取、拼接或转发任意 `README.md`；README 只负责静态阅读，脚本运行时展示内容必须作为固定文本直接维护在脚本源码内部。
 - 脚本头部注释自述必须紧跟 shebang，中间不插入空行、`setopt`、变量声明或其它代码。推荐格式：
 
   ```shell
-  #!/bin/zsh
+  # shell: zsh
   # 脚本自述：
   # - 脚本名称：脚本文件名
   # - 核心用途：一句话说明脚本解决什么问题。
@@ -174,7 +174,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
   }
   ```
 
-- 查找 `brew` 时按顺序兼容：`command -v brew`、`/opt/homebrew/bin/brew`、`/usr/local/bin/brew`。
+- 查找 `brew` 时按顺序兼容：`command -v brew`、`$(brew --prefix)/bin/brew`、`$(brew --prefix)/bin/brew`。
 - 写入 shellenv 时必须防重复追加，使用明显的 header / footer 块。
 - 写入配置后要让当前终端立即生效：`eval "$shellenv_cmd"`。
 - 已安装 [**Homebrew**](https://brew.sh/) 时，不自动执行 `brew update && brew upgrade && brew cleanup && brew doctor && brew -v`，必须询问用户。
@@ -196,7 +196,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
 - 编写脚本配套 `README.md` 时必须同时加载 `jobs-markdown-docs`，按 Jobs Markdown 规范生成；README 使用中文全量说明，不写成变更日志。
 - 脚本如果在内置自述之外还要补充读取某个 `README.md`，该文档路径必须稳定可解析；同目录不是无条件要求，但脚本移动后必须同步修正读取路径。
 - 如果原始输入是散落脚本，整理时优先保留原脚本名；只在明显错误、重复或不符合 Jobs 命名时，才做最小必要改名。
-- 批量升级脚本时，默认做结构优化：统一 `#!/bin/zsh`、路径变量、彩色日志、自述阻塞、防误触、`main "$@"`、[**Homebrew**](https://brew.sh/) 自检和升级交互；只有命中本节约定时才额外调整目录和 README。
+- 批量升级脚本时，默认做结构优化：统一 `# shell: zsh`、路径变量、彩色日志、自述阻塞、防误触、`main "$@"`、[**Homebrew**](https://brew.sh/) 自检和升级交互；只有命中本节约定时才额外调整目录和 README。
 - 输出压缩包前应做静态检查和结构检查；无法执行 MacOS 专属命令时，README 或最终说明里写清楚“未实际执行”。
 
 ### 1.6、Shell 验证
@@ -317,7 +317,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
 
 - 自检、安装、升级都必须先检查再执行，并遵守交互确认：普通动作不能默认执行，危险动作必须输入 `YES`。
 
-- 新写或升级脚本继续统一使用 `#!/bin/zsh`，不要退回 `#!/bin/bash`；除非目标环境明确不是 MacOS / zsh。
+- 新写或升级脚本继续统一使用 `# shell: zsh`，不要退回 `# shell: bash`；除非目标环境明确不是 MacOS / zsh。
 
 - 批量整改后必须同时扫描四类结构问题：一是函数外是否仍有散落执行语句，二是 `main()` 是否严格只含“单行函数调用 + 行尾职责注释”，三是每个调用是否都有同行业务职责注释，四是 `main()` 的第一条函数调用是否为运行时内置自述；不能只做 `zsh -n` 就视为完成。
 
@@ -367,7 +367,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
   }
   ```
 
-- `SCRIPT_DIR` 不能只依赖 `dirname "$0"`；当 `$0` 不是绝对路径时，要按脚本名从 `~/SourceTree.command/脚本名/脚本名` 和 `/Users/jobs/Documents/Github/JobsGenesis/SourceTree.command/脚本名/脚本名` 兜底找回真实脚本目录，确保能读取同目录 `README.md`，不能退化成 `/README.md`。
+- `SCRIPT_DIR` 不能只依赖 `dirname "$0"`；当 `$0` 不是绝对路径时，要按脚本名从 `~/SourceTree.command/脚本名/脚本名` 和 `../../../../JobsGenesis/SourceTree.command/脚本名/脚本名` 兜底找回真实脚本目录，确保脚本能定位自身目录和配套静态文档路径，不能退化成根目录路径；运行时自述仍必须以内置文本为准。
 - 调用 `clear` 前必须确认是完整终端，例如同时满足 `-t 1`、`TERM` 非空且不是 `dumb`，并且不是 `Sourcetree` 瘦身环境；否则跳过 `clear`，避免出现 `TERM environment variable not set.`。
 - 彩色日志必须支持纯文本降级：如果检测到 `Sourcetree`、非 TTY、`TERM=dumb` 或用户设置 `NO_COLOR`，不要输出 `\033` 这类 ANSI 转义码，避免日志里出现 `[0m` 乱码。
 - 防误触确认在系统终端里必须阻塞等待回车；只有明确识别为 Sourcetree 自定义动作时才跳过等待，并打印“已进入 Sourcetree 无交互连续执行模式”的说明。

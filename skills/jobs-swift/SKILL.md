@@ -31,6 +31,10 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 - “一链到底”是 Jobs DSL 改造的终结标准：在一个 lazy 初始化闭包、创建闭包或配置闭包里，主对象变量名应尽量只作为链式起点出现一次，例如 `label.byText(...).byFont(...).byAddTo(...)`；后续不再散落 `label.xxx = ...`、`label.method(...)` 或第二段 `label.byXxx(...)`。
 - 当一条链中先调用父类 DSL 会导致返回类型降级时，必须先完成当前类本层 DSL，再进入父类 DSL；如果后续仍需要回到子类能力，应补充能返回 `Self` / 主对象的 DSL，而不是拆成第二个接收者调用。
 - 写 DSL 示例、Xcode 代码片段和工程配置文档时，点语法以行为最小单位提行书写，方便按行删除或注释。跟在某一行 DSL 后面的解释统一用两根双斜杠 `//`；单独成行的段落说明统一用三根双斜杠 `///`。
+- 写 Swift 代码、DSL 示例、`lazy var` 代码块或常见 UI 配置前，先查看 `~/Library/Developer/Xcode/UserData/CodeSnippets` 下是否已有可复用的 Xcode 代码块；能复用既有代码块时，优先沿用代码块里的命名、占位符和链式组织方式。
+- 如果本轮更新了 Swift 侧封装、JobsSwiftDSL、导航栏 API、事件闭包或固定写法，必须同步检查并反哺 `~/Library/Developer/Xcode/UserData/CodeSnippets` 里的相关 `.codesnippet`，让代码块示例跟真实 API 保持一致；不要让片段继续传播旧封装、旧命名或散落赋值写法。
+- `~/Library/Developer/Xcode/UserData/CodeSnippets` 里的 Swift 代码片段默认采用“全暴露写法”：常用配置、事件、装配、约束和兼容分支尽量完整列出，让使用者按需求删除或注释，不让使用者临场补 API。片段必须优先传播 JobsSwiftDSL、JobsByUIKit、JobsSwiftBlock 和项目既有导航/事件封装，不能为了示例短而退回裸系统 API。
+- 每次完善或纠错 Swift 代码片段后，必须按同一写法反扫 Swift 工程应用层，重点查 `rowHeight =`、`contentInset =`、`scrollIndicatorInsets =`、`contentInsetAdjustmentBehavior =`、`backgroundColor =`、`delegate =`、`dataSource =` 等已有 DSL 覆盖的裸赋值。命中 Jobs 自己维护的主工程或本地 Swift Pod 代码时改成链式；外援 `Pods/`、`ManualBySwiftPods@Pods/` 和确认为第三方源码的目录不处理。
 - DSL 示例颗粒度必须细：一个属性、一个状态、一个事件、一个装配动作分别独立成行，不把标题、颜色、字体、图片、内边距等多个意图合并到一行。若同一能力同时存在单参数和二参数写法，默认首选单参数写法；二参数写法只在确实需要表达 `.selected`、`.disabled`、`.highlighted` 等非默认状态差异时使用。
 
 ### 1.2、文件基座与依赖导入
@@ -49,6 +53,9 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
   ```
 
 - 模板中的文件名必须匹配当前文件真实名称；模块名优先写当前类型、功能模块或所属框架的稳定名称，不确定时先参考同目录同类文件，不要机械写成占位的 `JobsClass`。
+- 默认坚持“一个文件一个类型”。除非是同一主类型的短 extension、私有 enum、typealias、轻量协议或确实必须和主类型同文件表达的局部声明，否则不要把多个独立 class / struct / enum 写进同一个 `.swift` 文件。
+- 控制器文件尤其不能顺手塞 model、cell、view、helper class。发现 `*VC.swift`、`ViewController*.swift`、`*Cell.swift` 里混入独立类型时，优先拆成独立文件，并按真实职责放到同目录或 `Model` / `View` / `Cell` 子目录。
+- 拆出来的 Swift 类型必须使用真实类型名文件名、完整 Jobs 文件头和最小必要 `import`。新增主工程文件时要同步检查 Xcode 文件引用和 target membership；新增 Swift Pod 文件时同步检查 podspec / Podfile / README / 生成物刷新边界。
 - [**Swift**](https://www.swift.org/) 文件最顶层优先写系统基础框架判断，再引入 Jobs 本地 Pod 化框架；不要把 `UIKit` / `AppKit` 分散到业务代码中。
 
   ```swift
@@ -81,12 +88,16 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 ### 1.3、代码块 + 懒加载写法
 
 - UI 属性优先使用“代码块闭包 + `lazy var`”的形式创建，初始化、基础配置、事件绑定尽量收口在同一个代码块里，避免在 `viewDidLoad` 里堆散代码。
+- 子视图默认使用 `lazy var` 创建和配置。不要在 `setupSubviews`、`viewDidLoad`、`init` 或某个大方法里连续 `UIView()` / `UILabel()` / `UIImageView()` / `UITableView(...)` 再散落赋值、添加和约束。装配方法只负责触发懒加载、添加层级、部署约束或做极少量编排。
+- 懒加载闭包内部必须优先用 JobsSwiftDSL 和项目既有 `byXxx` / `byAddTo` / SnapKit 收口：创建、基础属性、事件、进入父视图、约束尽量链式完成。除非当前类型确实缺 DSL，否则不要回退成 `let view = UIView(); view.xxx = ...; parent.addSubview(view)` 的散落写法。
 
   ```swift
   private lazy var demoView: UIView = {
-      let view = UIView()
-      view.backgroundColor = .clear
-      return view
+      UIView()
+          .byBackgroundColor(.clear)
+          .byAddTo(view) { make in
+              make.edges.equalToSuperview()
+          }
   }()
   ```
 
@@ -179,6 +190,12 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 
 - 导航栏按钮事件默认用闭包表达。普通点按用 `.onTap`，追加点按用 `.onTapAppend`，普通长按用 `.onLongPress`，追加长按用 `.onLongPressAppend`。
 - 事件闭包里先处理 `guard let self else { return }`，再写业务逻辑；不要在按钮链式配置里塞过长业务代码，复杂逻辑下沉到独立方法。
+
+#### 1.5.1、图标资源规则
+
+- Swift 项目中需要用到 UI 图标时，先去 [**iconfont**](https://www.iconfont.cn/) 找合适图标；优先复用项目已有图标库、命名和视觉风格，不随手使用来源不明的图片素材。
+- 新图标落地时，按当前项目资源体系放入 `Assets.xcassets`、本地 Pod 资源包或既有图标目录，并同步 Xcode 文件引用、podspec 资源声明和 README / SwiftDoc 资源说明。
+- 如果采用字体图标方式集成，要记录并统一维护图标名称、unicode / class 信息；业务代码里不要散落硬编码 codepoint，优先通过统一常量、枚举、模型或封装入口引用。
 
 ### 1.6、控制器组织方式
 
