@@ -52,6 +52,7 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 - 控制器文件尤其不能顺手塞 model、cell、view、helper class。发现 `ViewController*.m`、`*VC.m`、`*Cell.m` 里混入独立类时，优先拆成独立的 `类名.h/.m`，并按真实职责放到同目录或 `Model` / `View` / `Cell` 子目录，再由调用方 `#import` 引用。
 - 拆出来的类必须使用真实类名文件名、完整 Jobs 文件头、独立 `@interface` / `@implementation`，公开 API 放 `.h`，实现细节留 `.m`。不要为了省事写在调用方 `.m` 顶部形成“局部类”。
 - 如果新增文件属于 Xcode 主工程源码，必须同步检查并更新 `*.xcodeproj/project.pbxproj` 的文件引用和 target membership；如果属于本地 Pod，则按 Pod 目录、podspec、README 和 `pod install` 规则处理。不能只在磁盘上新建文件就结束。
+- Jobs 自建 Pod 的 `Core` 文件夹里面，`*.h` / `*.m` / `*.mm` 源码文件必须用同名文件夹包裹；同名文件夹的名字取文件名去掉后缀后的基名。例如 `Core/JobsOCRefresher/JobsOCRefreshConfig/JobsOCRefreshConfig.h` 和 `JobsOCRefreshConfig.m`，不能把 `JobsOCRefreshConfig.h` / `JobsOCRefreshConfig.m` 直接平铺在 `Core` 根部。聚合头、podspec、README、LICENSE 这类根入口文件可以留在 Pod 根或职责目录根部；移动后要同步检查 podspec 递归通配、公开头边界、README 目录结构和 `pod install` 后的 Development Pods 展示。
 
 ### 1.3、`Core` / `Support` 文件夹职责
 

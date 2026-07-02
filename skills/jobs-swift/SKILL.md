@@ -56,6 +56,7 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 - 默认坚持“一个文件一个类型”。除非是同一主类型的短 extension、私有 enum、typealias、轻量协议或确实必须和主类型同文件表达的局部声明，否则不要把多个独立 class / struct / enum 写进同一个 `.swift` 文件。
 - 控制器文件尤其不能顺手塞 model、cell、view、helper class。发现 `*VC.swift`、`ViewController*.swift`、`*Cell.swift` 里混入独立类型时，优先拆成独立文件，并按真实职责放到同目录或 `Model` / `View` / `Cell` 子目录。
 - 拆出来的 Swift 类型必须使用真实类型名文件名、完整 Jobs 文件头和最小必要 `import`。新增主工程文件时要同步检查 Xcode 文件引用和 target membership；新增 Swift Pod 文件时同步检查 podspec / Podfile / README / 生成物刷新边界。
+- 本地 Swift Pod / Swift 工程源码同样遵循“类型或成组文件用同名目录包裹”的组织方式：一个类型的主 `.swift`、同名 extension、资源适配文件，或混编时同一基名的 `.h` / `.m` 成组文件，不在功能目录根部平铺散落；用不含后缀名的稳定名称建目录，例如 `JobsRefreshConfig/JobsRefreshConfig.swift` 或 `JobsOCRefreshConfig/JobsOCRefreshConfig.h` / `JobsOCRefreshConfig.m`。聚合入口、README、podspec、Package 清单等根入口文件可以留在根部；移动后同步 podspec / Package / Xcode 引用和 README。
 - [**Swift**](https://www.swift.org/) 文件最顶层优先写系统基础框架判断，再引入 Jobs 本地 Pod 化框架；不要把 `UIKit` / `AppKit` 分散到业务代码中。
 
   ```swift

@@ -46,6 +46,7 @@
 - `jobs-swift`：Swift 文件基座、JobsSwiftDSL、点语法链式调用、懒加载、SnapKit、导航栏、控制器组织。
 - `jobs-python`：Python 脚本、命令行、日志、异常、依赖与测试。
 - `jobs-dart-flutter`：Dart / Flutter 页面、状态、路由、资源、打包与代码生成。
+- `jobs-auth-switch-motion`：JobsAppDoor 登录/注册切换动效、面板变形、卡片横滑、入口弹出与键盘顶起。
 - `hacker`：Hacker、安全研究、恶意仓库静态审阅、授权渗透测试边界、蓝队排查、IOC 和 HTTP 代理安全测试。
 
 ## 四、专项规则加载原则
