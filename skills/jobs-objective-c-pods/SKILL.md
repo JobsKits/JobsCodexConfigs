@@ -1,6 +1,6 @@
 ---
 name: jobs-objective-c-pods
-description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文件引用、Pod 拆分、JobsDefineProperty、JobsOCDSL、JobsModelDSL、JobsBlock、JobsMake、import 排序或 Xcode Markdown 引用时使用。
+description: 当任务涉及 Objective-C、本地 Pods、Core/Support/Resource、头文件引用、Pod 拆分、JobsDefineProperty、JobsOCDSL、JobsModelDSL、JobsBlock、JobsMake、import 排序或 Xcode Markdown 引用时使用。
 ---
 
 # Jobs Objective-C 与本地 Pods 工程规范
@@ -28,6 +28,7 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 - OC 新项目里“Jobs 自己写的代码”定义为：除 `Pods/` 及其下辖、`JobsByPods/ManualByOCPods@Pods/` 及其下辖之外的全部代码。
 - 所有本地管理的 Pod 默认位于项目根目录 `JobsByPods` 文件夹下，每个 Pod 文件夹命名统一为 `Pod名@Pods`。
 - 外源性 Pod 本地化后，统一放入 `JobsByPods/ManualByOCPods@Pods` 管辖。第三方来源信息要保留，只做本地托管适配，不抹掉上游痕迹。
+- `JobsByPods/ManualByOCPods@Pods/Texture` 是明确的重型第三方 Pod 豁免项，不套用 Jobs 自建 Pod 的 `Core` / `Support` / `Resource`、根聚合头、`JobsPodspecKit.rb` 和 podspec 扁平化规范，也不因全量本地 Pod 整理而移动或改写其上游目录、源码、资源与 subspec。只有用户明确点名修改 `Texture` 本身时才进入该目录，并继续以保留上游结构为优先。
 - `JobsByOCPods` 是最初提取出来的本地 Pod，也是后续本地 Pods 分离时的源头参照。遇到缺文件、缺宏、缺分类、缺辅助类时，优先回到 `JobsByOCPods` 找源头，再迁移到目标 Pod 的合适位置。
 - 工程最初能完整编译通过的前提，是尚未把部分本地写法提取成多个本地 Pod。拆分后，每个 Pod 实际上成为独立工程，只是通过同一个 `xcworkspace` 协同管理，因此编译器会提高跨域访问门槛，暴露头文件、模块化、依赖边界和循环引用问题。
 - 处理编译错误时，不要只追求“先编过”。要判断错误是不是由本地 Pod 化后的边界变化引起：头文件暴露层级、`Core` / `Support` 归属、podspec 依赖、聚合头、`HEADER_SEARCH_PATHS`、循环依赖，都要一起看。
@@ -52,28 +53,27 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 - 控制器文件尤其不能顺手塞 model、cell、view、helper class。发现 `ViewController*.m`、`*VC.m`、`*Cell.m` 里混入独立类时，优先拆成独立的 `类名.h/.m`，并按真实职责放到同目录或 `Model` / `View` / `Cell` 子目录，再由调用方 `#import` 引用。
 - 拆出来的类必须使用真实类名文件名、完整 Jobs 文件头、独立 `@interface` / `@implementation`，公开 API 放 `.h`，实现细节留 `.m`。不要为了省事写在调用方 `.m` 顶部形成“局部类”。
 - 如果新增文件属于 Xcode 主工程源码，必须同步检查并更新 `*.xcodeproj/project.pbxproj` 的文件引用和 target membership；如果属于本地 Pod，则按 Pod 目录、podspec、README 和 `pod install` 规则处理。不能只在磁盘上新建文件就结束。
-- Jobs 自建 Pod 的 `Core` 文件夹里面，`*.h` / `*.m` / `*.mm` 源码文件必须用同名文件夹包裹；同名文件夹的名字取文件名去掉后缀后的基名。例如 `Core/JobsOCRefresher/JobsOCRefreshConfig/JobsOCRefreshConfig.h` 和 `JobsOCRefreshConfig.m`，不能把 `JobsOCRefreshConfig.h` / `JobsOCRefreshConfig.m` 直接平铺在 `Core` 根部。聚合头、podspec、README、LICENSE 这类根入口文件可以留在 Pod 根或职责目录根部；移动后要同步检查 podspec 递归通配、公开头边界、README 目录结构和 `pod install` 后的 Development Pods 展示。
+- Jobs 自建 Pod 的磁盘根目录统一为 `Pod名@Pods`：`Core` 必须存在，`Support` / `Resource` 按需创建，不强制空目录；入口头、podspec、README、LICENSE 放在根目录，不放进 `Core` / `Resource`。CocoaPods 的 `Development Pods > Pod名` 只是展示分组，不能当成真实资源目录。
+- `Core` 只放代码。Jobs 自建 Pod 的 `Core` 目录下，所有 `*.h` / `*.m` / `*.mm` 源码都必须用完整基名建同名文件夹包裹；同一组 `.h` / `.m` / `.mm` 放进同一个同名文件夹，分类保留 `+Category` 全名，不允许因为同层只有一组就平铺。例如 `Core/JobsFuseAnimation/JobsFuseOuterRingConfig/JobsFuseOuterRingConfig.h` 和 `Core/JobsFuseAnimation/UIView+JobsFuseAnimation/UIView+JobsFuseAnimation.h`。
+- 聚合头 / 模块入口头必须放在 `Pod名@Pods/` 根目录，和 `Core` / `Resource` / `Support` 齐平。入口头一般使用 `Pod名.h`；若 `Core/Pod名/Pod名.h` 带同名 `.m` 或真实 `@interface`，它是源码头，不按聚合头硬搬，必须先解决命名冲突和公开头设计，避免同名 public header 互相覆盖。
+- `Core` 只能有一层真实目录，禁止磁盘上出现 `Pod名@Pods/Core/Core/...`，也不要用 podspec 虚拟 subspec 再包一层 `Core/**/*`。移动目录后同步检查 podspec 递归通配、公开头边界、README 目录结构和 `pod install` 后的 Development Pods 展示。
 
 ### 1.3、`Core` / `Support` 文件夹职责
 
-- 每个本地 Pod 默认必须有 `Core` 文件夹；`Support` 文件夹按需存在，不强制创建空目录。
-- `Core` 里放准备随着这个 Pod 向外暴露的核心能力。`Core` 代码的头文件通常进入 `public_header_files`，是使用方能看到的 API 边界。
-- `Support` 里放辅助 `Core` 的实现细节、兼容代码、内部分类、桥接文件、局部宏和非公开工具。`Support` 不是为了给外部随便引用，而是为了减少 Pod 之间的横向耦合。
+- `Core` 承载准备对外暴露的核心能力；`Core` 代码头文件通常进入 `public_header_files`，代表使用方能看到的 API 边界。
+- `Resource` 和 `Core` 平级，专门承载非代码资源；图片、`*.bundle`、声音文件、`*.json`、`*.plist`、`*.xcprivacy`、`.xcassets`、字体、音视频等都放入真实 `Resource` 目录，不塞进 `Core`，也不只在 podspec 中虚拟分组。
+- `Support` 辅助 `Core`，放实现细节、兼容代码、内部分类、桥接文件、局部宏和非公开工具。`Core` 如果必须引用 `Support`，只允许写在 `*.m` / `*.mm` 内，并使用 `<Pod名/Support头文件.h>` 这类尖括号形式。
 - 某个 Pod 缺文件时，最合理路径不是立刻新增跨 Pod 引用，而是去源头 `JobsByOCPods` 寻找，迁移到当前 Pod 的 `Support` 文件夹下，并按既定目录格式放入。
 - 能放进当前 Pod `Support` 解决的，不要轻易加新的 Pod 依赖。只有该能力确实属于独立公共能力、多个 Pod 都应该复用时，才考虑拆成独立 Pod 或依赖已有 Pod。
 - `Core` / `Support` 的真实磁盘目录结构必须能在 [**Xcode**](https://developer.apple.com/xcode) / Pods 工程里显示出来。新增、删除、移动目录后，通过 `JobsPodspecKit.rb` 动态映射，`pod install` 后应反映真实目录结构。
 
 ### 1.4、头文件引用边界
 
-- `Core` 文件夹下的文件用到 `Core` 文件夹下的文件，引用写在 `*.h`。这是公开 API 边界内部的正常暴露。
-- `Support` 文件夹下的文件用到 `Support` 文件夹下的文件，引用写在 `*.h`。这是内部辅助层之间的正常依赖。
-- `Core` 文件夹下的文件用到 `Support` 文件夹下的文件，引用写在 `*.m`，避免把内部实现细节泄露到公开头文件。
-- 用到其他 Pod 时，一律优先保护性写法 + 聚合头文件，避免本地路径、Pods Header 映射和模块化状态不一致导致编译失败。
-- 除 `Pods/` 及其下辖、`JobsByPods/ManualByOCPods@Pods/` 及其下辖之外，全局引用其他 Pod 时都应用同一规则：优先导入该 Pod 的聚合头，不直接导入子头、私有头或某个特别文件。
-- 其他 Pod 的聚合头双通道保护性写法，优先写在当前模块的 `*.h` 文件里；因为 `*.h` 会参与外部编译，可以把公开 API 需要的依赖边界同步暴露出去。只有放在 `*.h` 会导致编译报错、循环依赖，或该依赖确实只是 `*.m` 内部实现细节时，才退回写在 `*.m`。
-- 对 `JobsOCDSL`、`JobsMakes`、`JobsModelDSL`、`JobsBlock`、`JobsOCDefs` 这类聚合头，默认按“能上提到同名 `*.h` 就不上留在 `*.m`”执行；不要因为当前实现文件里用了点语法或链式调用，就把聚合头偷放在 `*.m`。只有确认该依赖纯属实现细节，或放进 `*.h` 会直接引发循环依赖、公开边界污染时，才允许留在 `*.m`，并且要带着这个判断去改，不是图省事。
-- 头文件只引入当前 `*.h` 真实暴露类型、协议、宏或声明所需要的模块，不为了 `*.m` 内部实现、链式 DSL 便利或历史迁移跨模块扩大 import。比如头文件实际只暴露 `JobsModel` 里的 model，就继续引 `JobsModel`；只有头文件 API 直接使用 `JobsModelDSL` 的链式类型、Block 或方法声明时，才引 `JobsModelDSL`。
-- 如果 `*.m` 需要某个 DSL 能力，而 `*.h` 没有暴露这个 DSL 类型，优先把 DSL 头文件放到 `*.m`；不要把实现细节通过公开头传染给外部模块。
+- `Core` 引用 `Core`、`Support` 引用 `Support` 时，依赖可写在 `*.h`；`Core` 引用 `Support` 时写在 `*.m` / `*.mm`，避免把内部实现细节泄露到公开头文件。
+- 系统头、第三方 Pod、内源 Pod 的公开依赖默认写入当前模块同名 `*.h`；Jobs 自己维护的 `*.m` / `*.mm` 顶部只保留自身同名头文件，以及当前 Pod 内部确需下沉到实现层的 `Support` 私有头。
+- 用到其他 Pod 时，一律优先 `__has_include` 双通道保护性写法 + 聚合头，先尝试 `<Pod名/聚合头.h>`，再 fallback 到 `"聚合头.h"`；不要裸写第三方 / 其他 Pod 的内部子头，也不要把保护性 import 留在实现文件。
+- 对 `JobsOCDSL`、`JobsMakes`、`JobsModelDSL`、`JobsBlock`、`JobsOCDefs` 这类聚合头，按“必须上提到同名 `*.h`”执行；如果上提后暴露循环依赖，要通过前向声明、依赖下沉、拆 Support 或修 podspec 边界解决，不退回实现文件。
+- 头文件只引入当前 `*.h` 真实暴露类型、协议、宏或声明所需要的最小模块；普通实现细节头可留在 `*.m`，但 `__has_include` 保护性 import 和上述 Jobs 聚合头不适用该例外。
 - 如果某个 Pod 已经提供聚合头，外部引用必须引入聚合头，不要因为当前只用到其中一个协议、宏、分类或类，就绕开聚合头单独引入内部子头。聚合头是这个 Pod 对外承诺的头文件边界，子头只是聚合头内部组织细节。
 - 禁止用“补一个更具体的子头 import”来掩盖 podspec 依赖、公开头暴露、modulemap、`HEADER_SEARCH_PATHS` 或循环依赖问题。例如已经引入 `JobsOCProtocols/JobsBaseProtocolHeader.h` 时，不要再为了 `BaseProtocol` 单独引入 `JobsOCProtocols/BaseProtocol.h`；如果 `BaseProtocol` 仍未声明，应排查 `JobsOCProtocols` 的直接依赖、聚合头导出、Pod 生成物和模块边界。
 - 只要某个文件用了 `MacroDef_Cor.h` 里提供的颜色相关能力，例如 `JobsWhiteColor`、`JobsClearColor`、`HEXCOLOR(...)`、`UIColor.xy_*` 等，则该文件的 `*.h` 头文件必须显式补上 `XYColorOC` 的双通道保护性导入；不要只依赖 `*.m`、PCH、别的聚合头或间接包含。
@@ -97,7 +97,6 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
   ```
 
 - 不要在公开头里写脆弱的相对路径，例如 `../../xxx.h`。如果必须靠搜索路径才能找到，要回到 podspec / `JobsPodspecKit.rb` / `header_mappings_dir` / 聚合头设计上修正。
-- 头文件放置的核心判断：公开 API 所需的最小依赖可以进入 `*.h`；实现细节、兼容分支、内部分类、只在方法体里使用的类型，优先留在 `*.m`。
 
 ### 1.5、本地 Pod 拆分策略
 
@@ -106,7 +105,7 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 - 新 Pod 目录必须使用 `Pod名@Pods`，内部至少包含 `Core`、`Pod名.podspec`、必要时包含 `Support`、`JobsPodspecKit.rb`、`README.md`、入口头 `Pod名.h`。
 - 能用 `Support` 消化的跨域访问问题，优先迁移到当前 Pod `Support`；确实属于可复用公共能力时，才新增 Pod 依赖。
 - 对第三方库做 Jobs 风格补充时，优先独立成本地管理的 `Extra` Pod，并以 `Extra` 结尾，例如 `BRPickerViewExtra`、`GKCustomNavigationBarExtra`、`HTMLDocumentExtra`。这些补充不直接改外援源码，优先放入对应 `Extra@Pods/Core`。
-- `Extra` Pod 里如果发现继承自 `NSObject`、实质承担配置 / model 职责的第三方类或本地适配类，默认做成 `类名+DSL.h/.m` 的形式并入对应 `Extra` Pod 的 `Core`。如果 `Core` 下文件不止一对 `*.h/*.m`，每组文件优先用各自名字命名的文件夹包裹管理，例如 `Core/BRPickerStyle/BRPickerStyle+DSL.h`。
+- `Extra` Pod 里如果发现继承自 `NSObject`、实质承担配置 / model 职责的第三方类或本地适配类，默认做成 `类名+DSL.h/.m` 的形式并入对应 `Extra` Pod 的 `Core`。每组文件都必须用各自名字命名的文件夹包裹管理，例如 `Core/BRPickerStyle/BRPickerStyle+DSL/BRPickerStyle+DSL.h`；即使该目录下只有 `BRPickerStyle+DSL.h/.m` 这一组，也不允许直接平铺在 `Core/BRPickerStyle/` 下。
 - 一个文件只办一件事。遇到历史代码在 `类名+Category.h/.m` 里顺手定义主类、兼容空类、记录类、配置类等独立类型时，必须拆到独立的 `类名.h/.m` 文件；category 文件只保留 category 职责。为防止旧代码或外部库重复定义，兼容类声明和空实现默认用 `#ifndef` 宏保护。
 - 批量修改后，如果用户指出一个具体文件的问题，默认按同一套批量规则做全局回归扫描。只要该问题可能由统一脚本、统一替换、统一 import 规则造成，就不能只修被点名文件，要在同一覆盖范围内找同类问题并同步修正。
 - 但凡修改本地 Pod，不管是新增、删除、重命名、调整 `Core` / `Support`、公开 API、入口头、资源、podspec、`Podfile.deps` 还是依赖关系，都必须扫描整个归属工程里使用到这个 Pod 的代码并同步更新。扫描范围至少包括主工程源码、Demo 入口、`#import` / 聚合头引用、其它 Pod 的 podspec 依赖、`Podfile` / `Podfile.deps`、README / 技术文档和脚本中的 Pod 名；不能只改 `Pod名@Pods` 目录。`Pods/`、`Podfile.lock`、`PodspecDependencyReport` 等生成物如果本轮没有执行生成流程，不手工硬改，但最终必须明确标出仍需刷新。
@@ -131,7 +130,7 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 
 - 每个本地 Pod 都应有自己的 `README.md`，因为每个 Pod 本质上都是相对独立的工程。
 - 只要更新 Pod 的 `Core`、`Support`、podspec、依赖、资源、入口头、公开 API，就要同步更新该 Pod 的 `README.md`。
-- Pod README 按本文档 `4.4、README 固定内容` 的格式写，至少说明：用途、适用场景、目录结构、`Core` / `Support` 边界、公开能力、内部辅助能力、依赖关系、引用方式、资源说明、验证方式、风险说明。
+- Pod README 至少说明：用途、适用场景、目录结构、`Core` / `Support` / `Resource` 边界、公开能力、内部辅助能力、依赖关系、引用方式、资源说明、验证方式、风险说明。
 - README 不要只写口号。它要能帮助后续排查：这个 Pod 为什么存在、哪些文件是公开的、哪些文件只是内部支撑、缺文件时应该回哪里找、修改依赖后要看哪个报告。
 
 ### 1.7、依赖报告与循环引用校正
@@ -227,7 +226,7 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 - OC / Swift 两侧面对同一个 Apple API 或同一个 Jobs 自建模型语义时，应尽量保持 DSL 名称、参数语义、调用顺序平行；发现一侧缺失时，优先补齐缺失侧，而不是在业务代码里回退到裸赋值。
 - 对“中心对象”配置时，优先围绕一个主接收者一路链式调用。需要配置子对象时，优先提供 `byXxxBlock(...)` 这类回调 DSL，让回调内部配置子对象后继续返回主对象，避免主链被 `object.child.xxx` 打断。
 - “一链到底”是 Jobs DSL 改造的终结标准：在一个 `jobsMakeXxx`、懒加载 getter 或配置闭包里，主对象变量名应尽量只作为链式起点出现一次，例如 `label.byText(...).byFont(...).addOn(...).byTop(...)`；后续不再散落 `label.xxx = ...`、`label.method(...)` 或第二段 `label.byXxx(...)`。
-- 当一条链中先调用父类 DSL 会导致返回类型降级时，必须先完成当前类本层 DSL，再进入父类 DSL；如果后续仍需要回到子类能力，应补充能返回主对象的 block DSL 或当前层 DSL，而不是拆成第二个接收者调用。
+- 父子类 DSL 调用顺序按 `1.10.1` 执行；如果父类 DSL 会导致返回类型降级，应补充能返回主对象的 block DSL 或当前层 DSL，而不是拆成第二个接收者调用。
 - 在本地 Pod 里写 `UITableView`、`UIButton`、`UITextField`、`UILabel` 等 JobsOCDSL 链时，编译通过不是唯一目标，还要检查链条类型是否中途被父类 DSL 降级。例如 `UITableView` 先调 `bySeparatorStyle`、`byDelegate`、`byDataSource`、`byShowsVerticalScrollIndicator` 等本层 / `UIScrollView` 层能力，再调 `byBgColor`、`addOn`、`byAdd` 等 `UIView` 层能力；不要把父类 DSL 插在中间导致后续子类 DSL 失效。
 - 写 DSL 示例、Xcode 代码片段和工程配置文档时，点语法以行为最小单位提行书写，方便按行删除或注释。跟在某一行 DSL 后面的解释统一用两根双斜杠 `//`；单独成行的段落说明统一用三根双斜杠 `///`。
 - 写 Objective-C 代码、DSL 示例、懒加载 getter 或常见 UI 配置前，先查看 `~/Library/Developer/Xcode/UserData/CodeSnippets` 下是否已有可复用的 Xcode 代码块；能复用既有代码块时，优先沿用代码块里的命名、占位符和链式组织方式。
@@ -257,7 +256,7 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 
 #### 1.10.2、`JobsMake` + `JobsOCDSL` UI 创建公约
 
-- UI 创建统一优先使用 `JobsMakes@Pods/Core/JobsMakes.h` 里的 `jobsMakeXXX` 形成创建 Block，例如 `jobsMakeLabel`、`jobsMakeButton`、`jobsMakeTextView`、`jobsMakeTextField`、`jobsMakeTableViewByPlain`、`jobsMakeCollectionView`。`JobsMake` 只负责创建对象和提供闭包入口，不在里面扩展业务配置。
+- UI 创建统一优先使用 `JobsMakes@Pods/JobsMakes.h` 里的 `jobsMakeXXX` 形成创建 Block，例如 `jobsMakeLabel`、`jobsMakeButton`、`jobsMakeTextView`、`jobsMakeTextField`、`jobsMakeTableViewByPlain`、`jobsMakeCollectionView`。`JobsMake` 只负责创建对象和提供闭包入口，不在里面扩展业务配置。
 - UI 子视图默认使用懒加载 getter 创建和配置。不要在 `setupSubviews`、`viewDidLoad`、`init` 或某个大方法里连续 `UIView.new` / `UILabel.new` / `UIImageView.new` / `UITableView alloc init...` 再散落赋值、添加和约束。`setupSubviews` 只负责触发懒加载、添加层级、部署约束或做极少量编排。
 - 懒加载 getter 内部必须优先用 `JobsMake` + `JobsOCDSL` / `JobsModelDSL` 收口：创建、基础属性、事件、进入父视图、Masonry 约束尽量通过链式写法完成。除非当前类型确实缺 DSL，否则不要回退到 `_view = UIView.new; _view.xxx = ...; [parent addSubview:_view];` 这种散落写法。
 - 需要保存约束对象时，可以在懒加载 getter 的 `byAdd` / `byOn` / `mas_makeConstraints` block 中赋值给 ivar，例如保存高度约束；但对象本身仍应由 getter 负责创建，不把整棵 UI 树塞进一个方法。
@@ -288,22 +287,24 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support、头文�
 #### 1.10.3、图标资源规则
 
 - OC 项目中需要用到 UI 图标时，先去 [**iconfont**](https://www.iconfont.cn/) 找合适图标；优先复用项目已有图标库、命名和视觉风格，不随手使用来源不明的图片素材。
-- 新图标落地时，按当前项目资源体系放入 `Assets.xcassets`、本地 Pod `Resources` / resource bundle 或既有图标目录，并同步 Xcode 文件引用、podspec 资源声明和 README 资源说明。
+- 新图标落地时，按当前项目资源体系放入 `Assets.xcassets`、自建 Pod 的 `Resource` / resource bundle 或既有图标目录，并同步 Xcode 文件引用、podspec 资源声明和 README 资源说明。
 - 如果采用字体图标方式集成，要记录并统一维护图标名称、unicode / class 信息；业务代码里不要散落硬编码 codepoint，优先通过统一常量、枚举、模型或封装入口引用。
 
 ### 1.11、`*.h` 头文件 `#import` 排序
 
 - [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html) 头文件顶部先写一般性 `#import`，再写双通道保护性 `#if __has_include(...)`。一般性写法和双通道保护性写法之间保留一个空行。
-- 一般性 `#import` 优先写系统 / 底层头文件，再写本文件直接依赖的普通头文件；越靠近底层越靠上，例如 C / C++ / runtime 相关头文件优先于 `Foundation` / `UIKit`。
+- 一般性 `#import` 优先写系统 / Apple / Darwin / 底层头文件，再写本文件直接依赖的普通头文件；越靠近底层越靠上，例如 ObjC runtime / message、C 系统库、`CoreFoundation`、`Foundation`、`UIKit`、`WebKit`、`AVFoundation` 等系统头按底层到上层排列。
+- Jobs 自己写的代码里，系统 / Apple / Darwin / ObjC runtime 头文件必须写在对应同名 `*.h` 文件的一般性 import 区域，`*.m` / `*.mm` 不单独导入。不限于 `#import <objc/runtime.h>`：例如 `<objc/message.h>`、`<Foundation/Foundation.h>`、`<UIKit/UIKit.h>`、`<WebKit/WebKit.h>`、`<AVFoundation/AVFoundation.h>`、`<AudioToolbox/AudioToolbox.h>`、`<Photos/Photos.h>`、`<Security/Security.h>`、`<CommonCrypto/CommonCrypto.h>`、`<os/lock.h>`、`<pthread.h>`、`<sys/sysctl.h>`、`<stdint.h>`、`<ctype.h>` 等都按这条执行。即使只有实现文件里调用相关 API，也要由同名头文件统一承接。
 - 如果已经写了 `#import <UIKit/UIKit.h>`，则同一个 import 区域不再重复写 `#import <Foundation/Foundation.h>`，因为 `UIKit` 已经包含 `Foundation`。
 - 一般性 `#import` 之间不留空行，一行一个；双通道保护性写法之间保留一个空行。不同模块的双通道保护性 `#if __has_include(...)` 块不能紧贴连写，前一个模块的 `#endif` 和后一个模块的 `#if __has_include(...)` 之间必须空一行。
 - `#import` 导入区和下面的正文内容区之间必须保留一行空行。正文内容区包括 `NS_ASSUME_NONNULL_BEGIN`、`@interface`、`@implementation`、`@protocol`、`@class`、`typedef`、`NS_INLINE`、`static`、`#pragma` 等；例如 `#import "DefineProperty.h"` 后面不能紧贴 `NS_ASSUME_NONNULL_BEGIN`，必须空一行。
 - 双通道保护性区域先写外源性 Pod，再写内源性 Pod。外源性 Pod 指 OC 项目 `Pods/` 目录下的模块；内源性 Pod 指 OC 项目 `JobsByPods/` 下除 `ManualByOCPods@Pods/` 以外的模块。
 - 内源性 Pod 的双通道保护性写法排序：`JobsOCProtocols` 靠前，中间写其他内源 Pod，`JobsBlock` 和 `JobsOCDefs` 靠后；其中 `JobsOCDefs` 通常作为宏定义兜底放在最后。
-- 双通道保护性 import 如果是为了本模块公开类型、协议、宏或属性声明服务，必须写在同模块 `*.h`；不要把公开头需要的跨模块 import 留在 `*.m`。外部 Pod 已有聚合头时，固定导入聚合头，例如 `#import <ZFPlayer/ZFPlayer.h>`，不要在双通道块里拆成多个内部子头。
-- Jobs 自己写的代码里，`*.m` / `*.mm` 文件不允许出现双通道保护性 import；如果实现文件里需要 `#if __has_include(...)` + `#import ...` + `#else` + `#import ...` + `#endif`，必须把这段移到同名 `*.h` 文件，由实现文件通过自身头文件承接依赖。
-- Jobs 自己写的普通业务文件里，`*.m` / `*.mm` 顶部默认只保留自身同名头文件；除当前 Pod 内部为了引用自身 `Support` 下的私有支援文件外，其它类、Cell、Model、聚合头、DSL 头和跨模块头都应上提到同名 `*.h`。发现 `ViewController@1.m` 这类实现文件直接 `#import "JobsOCRootFoldTableCell.h"` 时，要移到 `ViewController@1.h`，再由 `.m` 通过自身头文件承接。
-- 头文件只引入当前头文件已经暴露或直接使用的模块，不为了 `.m` 的实现便利跨模块引入更高层 DSL。例如头文件只用到 `JobsModel` 时，继续导入 `JobsModel`，不要改成 `JobsModelDSL`。
+- 跨模块保护性 import 承接 `1.4` 的边界规则：公开依赖写同名 `*.h`，外部 Pod 固定导入聚合头，例如 `#import <ZFPlayer/ZFPlayer.h>`；不要在双通道块里拆成多个内部子头。
+- Jobs 自己写的 `*.m` / `*.mm` 不允许出现 `#if __has_include(...)` / `#elif __has_include(...)` 包住 `#import`、`#define HAS_*` 或 fallback import 的保护性块；这些块必须整体移到同名 `*.h`。实现文件如果还需要可选能力判断，只能使用同名头文件定义好的 `HAS_*` 宏。
+- Jobs 自己写的普通业务 `*.m` / `*.mm` 顶部默认只保留自身同名头文件；除当前 Pod 内部确需引用自身 `Support` 私有支援文件外，其它类、Cell、Model、聚合头、DSL 头和跨模块头都应上提到同名 `*.h`。
+- 批量改完 OC import 后，必须全文扫描 Jobs 自维护范围内的 `.m` / `.mm`：`rg -n --glob '*.m' --glob '*.mm' --glob '!Pods/**' --glob '!JobsByPods/ManualByOCPods@Pods/**' "__has_include" .`。只要实现文件命中，就继续上提到同名头文件：保护性 import 整体迁移；可选能力判断改成同名头文件定义 `HAS_*` 宏后由 `.m` 使用宏判断。目标是 Jobs 自维护 `.m` / `.mm` 不直接出现 `__has_include`。
+- 批量改完 OC 系统头 import 后，必须全文扫描 Jobs 自维护范围内的 `.m` / `.mm`：`rg -n --glob '*.m' --glob '*.mm' --glob '!Pods/**' --glob '!JobsByPods/ManualByOCPods@Pods/**' '^#import <(objc/|Foundation/|UIKit/|WebKit/|AVFoundation/|AudioToolbox/|Photos/|Security/|CommonCrypto/|Core[A-Za-z]+/|QuartzCore/|ImageIO/|MobileCoreServices/|UniformTypeIdentifiers/|os/|sys/|libkern/|XCTest/|pthread\\.h|stdint\\.h|stdio\\.h|stdlib\\.h|string\\.h|ctype\\.h)' .`。只要命中 Jobs 自己写的实现文件，就把系统头上提到同名 `*.h`；如果没有同名头或该文件是明确第三方源码，必须在最终说明中标出原因。
 - 双通道保护性写法固定保持四段结构，不要拆散：
 
   ```objc

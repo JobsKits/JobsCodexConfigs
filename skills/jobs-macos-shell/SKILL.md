@@ -174,7 +174,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
   }
   ```
 
-- 查找 `brew` 时按顺序兼容：`command -v brew`、`$(brew --prefix)/bin/brew`、`$(brew --prefix)/bin/brew`。
+- 查找 `brew` 时按顺序兼容：`command -v brew`、`/opt/homebrew/bin/brew`、`/usr/local/bin/brew`；已经能调用 `brew` 时，再用 `brew --prefix` 校验真实前缀。
 - 写入 shellenv 时必须防重复追加，使用明显的 header / footer 块。
 - 写入配置后要让当前终端立即生效：`eval "$shellenv_cmd"`。
 - 已安装 [**Homebrew**](https://brew.sh/) 时，不自动执行 `brew update && brew upgrade && brew cleanup && brew doctor && brew -v`，必须询问用户。
@@ -212,32 +212,11 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
 
 ### 1.7、脚本运行策略与自检定义
 
-- 所有可独立运行的文本脚本都必须定义 `show_script_intro_and_wait()` 或职责等价的方法；自述正文必须直接写在脚本内部，README 只能作为补充，不能通过 `cat README.md` 代替内置内容。
-
-- `main()` 必须把运行时内置自述作为首个高层步骤；日志初始化、`setopt`、`trap` 注册、参数解析、路径切换等准备逻辑也必须排在自述之后，或下沉到自述函数内部的无副作用展示准备中。确认前不得执行环境安装、文件写入、Git 索引修改或其它真实业务。
-
-- Sourcetree 脚本必须支持双运行模式
-
-  * 明确识别为 Sourcetree 自定义动作时打印自述后无交互连续执行
-  * 同一脚本在系统终端单独运行时打印自述并等待回车确认。
-
+- 本节只补充 1.3 中自述 / 交互规则的运行策略：入口脚本必须先进入 `show_script_intro_and_wait()` 或等价函数；确认前不得执行环境安装、文件写入、Git 索引修改或其它真实业务。
+- 日志初始化、`setopt`、`trap` 注册、参数解析、路径切换等准备逻辑要排在自述确认之后；确需提前准备的展示变量，只能下沉到无副作用的展示准备函数中。
+- Sourcetree 脚本必须支持双运行模式：明确识别为 Sourcetree 自定义动作时，打印自述后无交互连续执行；同一脚本在系统终端独立运行时，打印自述并等待回车确认。
 - 不能仅凭 `! -t 0`、`TERM=dumb` 或输出不是 TTY 就判定为 Sourcetree；这些条件只能决定输出降级。跳过回车必须以明确的 Sourcetree 运行态识别结果为准。
-
 - 非 Sourcetree 且没有可交互标准输入时，应报错退出并提示改用终端执行，不能静默跳过确认后继续真实业务。
-
-  ```shell
-  show_script_intro_and_wait() {
-    # 执行前展示脚本用途，让用户确认不是误触。
-    clear
-    highlight_echo "============================== 脚本自述 =============================="
-    note_echo "当前脚本：${SCRIPT_PATH}"
-    note_echo "脚本用途：这里写清楚当前脚本准备做什么、会影响哪些文件或环境。"
-    warn_echo "继续前请确认已经理解脚本影响范围；按 Ctrl+C 可以取消。"
-    highlight_echo "======================================================================="
-    echo ""
-    read -r "?👉 确认继续执行请按回车；按 Ctrl+C 取消：" _
-  }
-  ```
 
 - 新写脚本时优先参考 [**JobsDocs Shell 脚本代码片段**](https://github.com/JobsKits/JobsDocs/blob/main/🔥Shell脚本代码片段.md/Shell脚本代码片段.md)，但不要机械复制；必须结合当前脚本职责做最小必要改造。
 
@@ -261,12 +240,6 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
 - `main()` 内禁止出现 `local` / `typeset`、普通赋值、`if` / `case` / `for` / `while` / `until`、`&&` / `||` 条件组合、命令替换、重定向、`return` / `exit`、直接系统命令或多行调用。参数可以原样传给单行函数调用，例如 `run_original_logic "$@"`。
 - 退出码捕获、成功与失败分支、循环处理、状态汇总和返回值传播必须整体下沉到职责明确的函数；`main()` 只调用该函数，不在入口中展开实现。
 - `main()` 内每个函数调用都必须在调用行尾写 `#` 注释，说明“这一步做什么”或“为什么现在调用”；禁止只依赖函数定义处注释，也禁止把调用职责注释放到上一行。
-
-- `main()` 中出现的每一个函数名 / 方法名都必须有同行尾部注释。由于 `main()` 禁止条件判断、循环和逻辑组合，复杂调用必须先下沉为独立函数，再以“单行调用 + 行尾注释”进入 `main()`。
-
-- `main()` 不得直接承载变量准备、任何条件判断、循环、文件操作或长命令；发现这些内容时，必须封装成职责明确的函数，再在 `main()` 中以“单行函数调用 + 行尾业务注释”的形式集中编排。
-
-- 条件判断、循环、局部变量准备和成组业务操作应封装成语义明确的方法，再由 `main()` 调用；不要把复杂控制流直接铺在入口函数里。
 
 - 只有当完整流程需要被复用，或额外的流程分层确实能表达独立职责时，才定义 `run_main_flow()`；如果 `main()` 里只有一行 `run_main_flow "$@"`，应删除这层无意义转发，把其中的高层调用直接移入 `main()`。
 
@@ -314,10 +287,7 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
   ```
 
 - 自检类脚本的定义统一为：检测目标是否存在；如果已经存在，则进入升级 / 更新逻辑；如果没有检测到已安装，则安装最新版本。
-
-- 自检、安装、升级都必须先检查再执行，并遵守交互确认：普通动作不能默认执行，危险动作必须输入 `YES`。
-
-- 新写或升级脚本继续统一使用 `# shell: zsh`，不要退回 `# shell: bash`；除非目标环境明确不是 MacOS / zsh。
+- 自检、安装、升级都必须先检查再执行，并遵守交互确认：普通动作不能默认执行，危险动作必须输入 `YES`；新写或升级脚本继续统一使用 `# shell: zsh`，除非目标环境明确不是 MacOS / zsh。
 
 - 批量整改后必须同时扫描四类结构问题：一是函数外是否仍有散落执行语句，二是 `main()` 是否严格只含“单行函数调用 + 行尾职责注释”，三是每个调用是否都有同行业务职责注释，四是 `main()` 的第一条函数调用是否为运行时内置自述；不能只做 `zsh -n` 就视为完成。
 
@@ -329,6 +299,9 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
 - Sourcetree 模式必须从一而终：禁止调用 `read`、`select`、`fzf` 选择、`YES` 确认或任何需要外界输入的交互；所需目标应来自自定义动作参数、当前工作目录、环境变量或安全默认值。必要参数缺失时直接打印错误并退出，不能停在输入等待状态。
 - 终端独立运行模式必须保留防误触：打印相同的脚本内置自述并等待用户回车，确认后才进入与 Sourcetree 模式共用的真实业务流程。
 - Sourcetree 识别应组合检查相关环境变量、脚本解析路径和父进程链；`! -t 0`、`! -t 1`、`TERM=dumb`、`NO_COLOR` 只能用于判断交互能力或纯文本输出，不能单独作为 Sourcetree 身份依据。
+- 凡是 Sourcetree 脚本，只要识别为 Sourcetree 自定义动作，就必须在任何 `log`、`color_echo`、`highlight_echo`、`note_echo`、内置自述或外部命令输出之前完成纯文本输出初始化；第一屏自述也不能出现 `[0m`、`\033[0m` 或任何 ANSI 控制字符。
+- Sourcetree 纯文本初始化必须至少设置 `PLAIN_OUTPUT=1`，并导出 `NO_COLOR=1`、`FORCE_COLOR=0`、`CLICOLOR=0`、`ANSI_COLORS_DISABLED=1`、`npm_config_color=false`；脚本自身日志要通过 `strip_ansi_stream` 或等价函数剥离 ANSI，外部命令输出也必须经过同一类过滤后再显示和写入日志。
+- `configure_output_mode`、`prepare_plain_output_context` 或等价函数必须在 `show_script_intro_and_wait()` 里打印第一行内容之前调用一次，也要在运行时初始化函数中再次调用，保证 SourceTree、非 TTY、`TERM=dumb`、`NO_COLOR` 等场景都不会漏出颜色转义码。
 
   ```shell
   # 识别脚本是否由 Sourcetree 自定义动作实际发起。
@@ -367,11 +340,9 @@ description: 当任务涉及 MacOS 原生 Shell、zsh、.sh、.command、内置�
   }
   ```
 
-- `SCRIPT_DIR` 不能只依赖 `dirname "$0"`；当 `$0` 不是绝对路径时，要按脚本名从 `~/SourceTree.command/脚本名/脚本名` 和 `../../../../JobsGenesis/SourceTree.command/脚本名/脚本名` 兜底找回真实脚本目录，确保脚本能定位自身目录和配套静态文档路径，不能退化成根目录路径；运行时自述仍必须以内置文本为准。
+- `SCRIPT_DIR` 不能只依赖 `dirname "$0"`；当 `$0` 不是绝对路径时，要按脚本名从 `~/SourceTree.command/脚本名/脚本名` 和 `../../../../JobsGenesis/SourceTree.command/脚本名/脚本名` 兜底找回真实脚本目录，确保脚本能定位自身目录和配套静态文档路径，不能退化成根目录路径；运行时自述仍以内置文本为准，不能在运行时 `cat`、拼接或依赖外部 `README.md`。
 - 调用 `clear` 前必须确认是完整终端，例如同时满足 `-t 1`、`TERM` 非空且不是 `dumb`，并且不是 `Sourcetree` 瘦身环境；否则跳过 `clear`，避免出现 `TERM environment variable not set.`。
-- 彩色日志必须支持纯文本降级：如果检测到 `Sourcetree`、非 TTY、`TERM=dumb` 或用户设置 `NO_COLOR`，不要输出 `\033` 这类 ANSI 转义码，避免日志里出现 `[0m` 乱码。
-- 防误触确认在系统终端里必须阻塞等待回车；只有明确识别为 Sourcetree 自定义动作时才跳过等待，并打印“已进入 Sourcetree 无交互连续执行模式”的说明。
-- `Sourcetree` 脚本运行时展示的自述必须写在脚本内部，例如 `show_script_intro_and_wait` 函数直接打印脚本名称、用途、运行入口、环境策略、风险提示和日志路径；不能在运行时 `cat`、拼接或依赖外部 `README.md`。
+- 彩色日志必须支持纯文本降级：如果检测到 `Sourcetree`、非 TTY、`TERM=dumb` 或用户设置 `NO_COLOR`，不要输出 `\033` 这类 ANSI 转义码，避免日志和 SourceTree 窗口里出现 `[0m` 乱码；此规则对所有 SourceTree 脚本强制生效。
 - `Sourcetree` 脚本如果会递归处理工程目录，默认跳过 `.git`、`Pods`、`.dart_tool`、`build`、`DerivedData`，并在最后输出总数、失败数和日志路径；只要有子任务失败，脚本最终也要返回失败状态，方便 `Sourcetree` 判断执行结果。
 
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>

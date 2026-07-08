@@ -23,17 +23,4 @@ description: 当任务涉及 Dart、Flutter、Widget 拆分、状态管理、路
 - 新图标落地时，按当前项目资源体系放入 `assets/`、字体图标目录或既有资源目录，并同步 `pubspec.yaml`、资源常量、README 资源说明和必要的平台端配置。
 - 如果采用字体图标方式集成，要记录并统一维护图标名称、unicode / class 信息；业务代码里不要散落硬编码 codepoint，优先通过统一常量、枚举、模型或封装入口引用。
 
-<!--
-后续补充 Dart / Flutter 规范时，在这里继续写：
-
-- Dart 命名与目录结构
-- 页面 / Widget 拆分
-- 状态管理
-- 路由
-- 资源管理
-- iOS / Android 打包脚本
-- CocoaPods / Gradle / Flutter SDK 版本处理
-- 代码生成与自动化脚本约定
--->
-
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>

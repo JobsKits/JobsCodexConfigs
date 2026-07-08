@@ -1,6 +1,6 @@
 ---
 name: jobs-swift
-description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语法链式调用、懒加载、SnapKit、导航栏配置、控制器组织或 Swift return self 收口时使用。
+description: 当任务涉及 Swift、Swift 文件组织、本地 Swift Pod、Core/Resource、JobsSwiftDSL、点语法链式调用、懒加载、SnapKit、导航栏配置、控制器组织或 Swift return self 收口时使用。
 ---
 
 # Jobs Swift 写作规范
@@ -27,8 +27,7 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 - 对系统 API 进行二次封装成 JobsSwiftDSL 时，覆盖标准是当前类型自己声明的全部属性、0 个入参数方法、1 个入参数方法。父类已有能力放在父类 DSL，不在子类重复铺开；有返回值的方法默认也要返回 `Self` / 当前主对象并标注 `@discardableResult`，除非该能力天然是查询或明确的终止动作。
 - Swift 虽然不需要像 OC 一样集中定义大量 Block typedef，但闭包参数命名、返回 `Self`、`@discardableResult` 和链式收口要保持稳定，让调用方可以一路点下去。除明确的终止动作外，Swift DSL 不写只执行副作用却返回 `Void` 的方法；优先返回 `Self` 或当前主对象类型，避免链条中途断掉。
 - Swift / OC 两侧面对同一个 Apple API 或同一个 Jobs 自建模型语义时，应尽量保持 DSL 名称、参数语义、调用顺序平行；发现一侧缺失时，优先补齐缺失侧，而不是在业务代码里回退到裸赋值。
-- 对“中心对象”配置时，优先围绕一个主接收者一路链式调用。需要配置子对象时，优先提供 `byXxxBlock(...)`、`byXxx { ... }` 或项目既有闭包入口，让闭包内部配置子对象后继续返回主对象，避免主链被 `object.child.xxx` 打断。
-- “一链到底”是 Jobs DSL 改造的终结标准：在一个 lazy 初始化闭包、创建闭包或配置闭包里，主对象变量名应尽量只作为链式起点出现一次，例如 `label.byText(...).byFont(...).byAddTo(...)`；后续不再散落 `label.xxx = ...`、`label.method(...)` 或第二段 `label.byXxx(...)`。
+- 对“中心对象”配置时，优先围绕一个主接收者一路链式调用。需要配置子对象时，优先提供 `byXxxBlock(...)`、`byXxx { ... }` 或项目既有闭包入口，让闭包内部配置子对象后继续返回主对象；主对象变量名应尽量只作为链式起点出现一次。
 - 当一条链中先调用父类 DSL 会导致返回类型降级时，必须先完成当前类本层 DSL，再进入父类 DSL；如果后续仍需要回到子类能力，应补充能返回 `Self` / 主对象的 DSL，而不是拆成第二个接收者调用。
 - 写 DSL 示例、Xcode 代码片段和工程配置文档时，点语法以行为最小单位提行书写，方便按行删除或注释。跟在某一行 DSL 后面的解释统一用两根双斜杠 `//`；单独成行的段落说明统一用三根双斜杠 `///`。
 - 写 Swift 代码、DSL 示例、`lazy var` 代码块或常见 UI 配置前，先查看 `~/Library/Developer/Xcode/UserData/CodeSnippets` 下是否已有可复用的 Xcode 代码块；能复用既有代码块时，优先沿用代码块里的命名、占位符和链式组织方式。
@@ -56,7 +55,9 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 - 默认坚持“一个文件一个类型”。除非是同一主类型的短 extension、私有 enum、typealias、轻量协议或确实必须和主类型同文件表达的局部声明，否则不要把多个独立 class / struct / enum 写进同一个 `.swift` 文件。
 - 控制器文件尤其不能顺手塞 model、cell、view、helper class。发现 `*VC.swift`、`ViewController*.swift`、`*Cell.swift` 里混入独立类型时，优先拆成独立文件，并按真实职责放到同目录或 `Model` / `View` / `Cell` 子目录。
 - 拆出来的 Swift 类型必须使用真实类型名文件名、完整 Jobs 文件头和最小必要 `import`。新增主工程文件时要同步检查 Xcode 文件引用和 target membership；新增 Swift Pod 文件时同步检查 podspec / Podfile / README / 生成物刷新边界。
-- 本地 Swift Pod / Swift 工程源码同样遵循“类型或成组文件用同名目录包裹”的组织方式：一个类型的主 `.swift`、同名 extension、资源适配文件，或混编时同一基名的 `.h` / `.m` 成组文件，不在功能目录根部平铺散落；用不含后缀名的稳定名称建目录，例如 `JobsRefreshConfig/JobsRefreshConfig.swift` 或 `JobsOCRefreshConfig/JobsOCRefreshConfig.h` / `JobsOCRefreshConfig.m`。聚合入口、README、podspec、Package 清单等根入口文件可以留在根部；移动后同步 podspec / Package / Xcode 引用和 README。
+- 本地 Swift Pod / Swift 工程源码遵循“类型或成组文件用同名目录包裹”：一个类型的主 `.swift`、同名 extension、资源适配文件，或混编时同一基名的 `.h` / `.m` 成组文件，不在功能目录根部平铺散落；用不含后缀名的稳定名称建目录，例如 `JobsRefreshConfig/JobsRefreshConfig.swift`。聚合入口、README、podspec、Package 清单等根入口文件可以留在根部。
+- `Core` 只放代码且只能有一层真实目录，禁止磁盘上出现 `Pod名@Pods/Core/Core/...`，也不要用 podspec / Package / Xcode 分组再虚拟包一层 `Core`。移动后同步 podspec / Package / Xcode 引用、README / SwiftDoc 和 Development Pods 展示。
+- `Resource` 和 `Core` 平级，承载 `*.plist`、`*.xcprivacy`、图片、字体、音视频、`*.bundle`、`*.xcassets`、`*.strings`、`*.json` 等非代码资源；`Resource` 是真实磁盘目录，不是 podspec / Package 虚拟分组，没有资源时不强制创建。
 - [**Swift**](https://www.swift.org/) 文件最顶层优先写系统基础框架判断，再引入 Jobs 本地 Pod 化框架；不要把 `UIKit` / `AppKit` 分散到业务代码中。
 
   ```swift
@@ -77,20 +78,15 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
   }
   ```
 
-- [**Swift**](https://www.swift.org/) 文件头部注释区域、`import` 区域、正文内容区域三者之间必须各空一行；普通单行 `import` 彼此之间保持紧凑，不要空行。
-- 保护性导入块和普通单行 `import` 之间必须保留一行空行，例如平台导入块结束后空一行再写 `import JobsSwiftDSL`；普通单行 `import` 写完后，如需接纯导入用途的 `#if canImport(...)` 块，也要先空一行。
-- `#if os(OSX)` / `#elseif os(iOS) || os(tvOS)` / `#endif` 平台导入块必须连贯，只能包含 `import AppKit` 和 `import UIKit`，不要把 `typealias`、类、结构体、扩展、变量或业务代码插进去。
-- `typealias` 等平台差异声明要单独成块，写在 `import` 区域下面的正文区域；它与 `import` 区域之间保留一行空行。
-- 纯导入用途的 `#if canImport(...)` 块统一放在所有普通 `import` 的最下面；如果 `canImport` 块包住的是类、扩展、`@main` 或其它业务代码，则按业务条件编译处理，不要当成 `import` 块移动。
-
-- 控制器统一继承 `BaseVC`。除非项目已有更具体的 Jobs 基类，否则不要直接继承 `UIViewController`。
+- [**Swift**](https://www.swift.org/) 文件头部注释、`import` 区域、正文区域三者之间各空一行；普通单行 `import` 彼此紧凑，不留空行。
+- 平台导入块、普通 `import`、纯导入用途的 `#if canImport(...)` 块之间各空一行；`#if os(OSX)` / `#elseif os(iOS) || os(tvOS)` / `#endif` 平台导入块只能包含 `import AppKit` 和 `import UIKit`。
+- `typealias` 等平台差异声明写在正文区域，和 `import` 区域之间保留一行空行；如果 `canImport` 块包住类、扩展、`@main` 或其它业务代码，则按业务条件编译处理，不当成导入块移动。
 - 本地 Pod 化框架默认按项目既有能力引入：`JobsByUIKit` 提供 UI / 链式调用 / 导航栏等能力，`JobsSwiftBlock` 提供闭包封装能力。缺依赖时先检查 `Podfile` / 本地 Pods，不要在业务文件里绕开封装重新实现。
 
 ### 1.3、代码块 + 懒加载写法
 
-- UI 属性优先使用“代码块闭包 + `lazy var`”的形式创建，初始化、基础配置、事件绑定尽量收口在同一个代码块里，避免在 `viewDidLoad` 里堆散代码。
-- 子视图默认使用 `lazy var` 创建和配置。不要在 `setupSubviews`、`viewDidLoad`、`init` 或某个大方法里连续 `UIView()` / `UILabel()` / `UIImageView()` / `UITableView(...)` 再散落赋值、添加和约束。装配方法只负责触发懒加载、添加层级、部署约束或做极少量编排。
-- 懒加载闭包内部必须优先用 JobsSwiftDSL 和项目既有 `byXxx` / `byAddTo` / SnapKit 收口：创建、基础属性、事件、进入父视图、约束尽量链式完成。除非当前类型确实缺 DSL，否则不要回退成 `let view = UIView(); view.xxx = ...; parent.addSubview(view)` 的散落写法。
+- 子视图默认使用“代码块闭包 + `lazy var`”创建和配置；初始化、基础属性、轻量事件绑定尽量收口在同一个代码块里，装配方法只负责触发懒加载、添加层级、部署约束或做极少量编排。
+- 懒加载闭包内部必须优先用 JobsSwiftDSL 和项目既有 `byXxx` / `byAddTo` / SnapKit 收口：创建、配置、事件、进入父视图、约束尽量链式完成；除非当前类型确实缺 DSL，否则不要回退成散落的 `let view = UIView(); view.xxx = ...; parent.addSubview(view)`。
 
   ```swift
   private lazy var demoView: UIView = {
@@ -102,8 +98,7 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
   }()
   ```
 
-- 懒加载代码块里只做对象创建、基础属性和轻量事件绑定；涉及布局、网络、复杂业务状态时，放到独立方法里，避免闭包变成第二个 `viewDidLoad`。
-- 需要使用 `self` 的闭包要明确引用策略：UI 初始化闭包尽量不捕获 `self`；事件闭包默认 `[weak self]`，布局闭包按项目现有生命周期可使用 `[unowned self]`。
+- 懒加载代码块不要变成第二个 `viewDidLoad`；涉及布局、网络、复杂业务状态时放到独立方法里。需要使用 `self` 的闭包要明确引用策略：UI 初始化闭包尽量不捕获 `self`；事件闭包默认 `[weak self]`，布局闭包按项目现有生命周期可使用 `[unowned self]`。
 
 ### 1.4、[**SnapKit**](https://github.com/SnapKit/SnapKit) 与 `byAddTo` 约束写法
 
@@ -195,12 +190,13 @@ description: 当任务涉及 Swift、Swift 文件组织、JobsSwiftDSL、点语�
 #### 1.5.1、图标资源规则
 
 - Swift 项目中需要用到 UI 图标时，先去 [**iconfont**](https://www.iconfont.cn/) 找合适图标；优先复用项目已有图标库、命名和视觉风格，不随手使用来源不明的图片素材。
-- 新图标落地时，按当前项目资源体系放入 `Assets.xcassets`、本地 Pod 资源包或既有图标目录，并同步 Xcode 文件引用、podspec 资源声明和 README / SwiftDoc 资源说明。
+- 新图标落地时，按当前项目资源体系放入 `Assets.xcassets`、自建 Pod 的 `Resource` / resource bundle 或既有图标目录，并同步 Xcode 文件引用、podspec 资源声明和 README / SwiftDoc 资源说明。
 - 如果采用字体图标方式集成，要记录并统一维护图标名称、unicode / class 信息；业务代码里不要散落硬编码 codepoint，优先通过统一常量、枚举、模型或封装入口引用。
 
 ### 1.6、控制器组织方式
 
 - `viewDidLoad` 只做主流程编排：导航栏配置、视图唤醒、数据绑定、首屏请求。不要把子视图创建、约束、事件、业务判断全部堆进去。
+- 控制器统一继承 `BaseVC`。除非项目已有更具体的 Jobs 基类，否则不要直接继承 `UIViewController`。
 - 推荐控制器结构按职责分块：系统导入、本地框架导入、类声明、懒加载属性、生命周期、导航栏配置、UI 装配、事件响应、业务方法。
 - 视图创建、`byAddTo` 约束、`byVisible(YES)` 唤醒、`jobsSetupGKNav` 导航栏配置，应保持 Jobs 项目现有链式风格，除非用户明确要求切换成原生写法。
 
