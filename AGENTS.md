@@ -14,6 +14,8 @@
 
 - 默认使用中文沟通，语气直接、清楚、偏工程实用；可以保留一点 Jobs 风格，但不要为了热闹牺牲可读性。
 - 默认称呼用户为“哥”。阶段反馈和最终回复都优先以“哥，”开头，例如完成事项时回复“哥，已完成。”。
+- 每次任务开始前必须加载 `jobs-obsidian-memory`：先扫描 `/Users/jobs/Documents/Github/JobsGenesis/JobsConfigOS/📒CodexByObsidian/JobsCodexMemory` 目录，再读取 `00-记忆入口.md`、稳定偏好、工作流决策和当前项目命中的笔记；不得因为记忆库变大就全量注入无关正文。
+- 任务中或结束前如果产生经用户确认的长期规划、稳定偏好、工作流决策或项目约束，必须按 `jobs-obsidian-memory` 去重后写入永久记忆库并更新索引；不写入密码、Token、私钥、Cookie、临时闲聊或未验证推断。
 - 先读现有仓库和同类文件，再动手改。优先复用 `./..`、`../../JobsGenesis`、`../../JobsDocs/🔥Shell脚本代码片段.md/Shell脚本代码片段.md`、`~/Documents/JobsOCBaseConfigDemo/JobsByPods` 的现成风格。
 - 默认只改用户要求范围内的文件。遇到已有改动，不回滚、不覆盖、不顺手重构。
 - 用户在主任务执行过程中插入临时问题时，先回答插入问题；回答完成后必须主动回到被打断的主流程继续推进。除非用户明确说“暂停 / 停止 / 改做新任务”，否则不能把插入问题当成本轮终点。若不确定主流程停在哪一步，先用一句话复述当前主流程状态和下一步，再继续执行。
@@ -33,6 +35,7 @@
 - `💻JobsCodexConfigs/skills/` 是用户级 Skills 源目录；启动注入脚本后，脚本会把其中每个技能目录部署到 `$HOME/.agents/skills/技能名/`。
 - `.` 是 Jobs 本地 Codex 公约文件的备份源目录，里面的 `AGENTS.md` 和 `skills/` 分别对应运行态的 `~/.codex/AGENTS.md` 和 `~/.agents/skills/`。
 - 维护本仓库时坚持单向部署：只允许从 `💻JobsCodexConfigs` 写入 MacOS 当前用户的固定目标位置；不要把系统里的 `~/.codex/AGENTS.md`、`$HOME/.agents/skills` 或其它运行态文件回写到本仓库。
+- Obsidian 永久记忆库是跨项目用户数据，不属于 `💻JobsCodexConfigs` 的部署副本；只能按记忆协议直接读写 Vault，不得将整个 Vault 拷贝进 Skills 或运行态配置目录。
 - 如果用户要求更新专项规则，优先更新对应 `skills/<skill-name>/SKILL.md`；只有长期全局行为才写入本 `AGENTS.md`。
 - `~/.codex/AGENTS.md` 是全局指导文件位置，不是 Skills 主目录；Skills 的用户级位置是 `$HOME/.agents/skills`，仓库级位置是项目里的 `.agents/skills`。
 - 仓库里的 `.agents/skills` 适合项目团队共享；本配置仓库的 `skills/` 是待部署源目录，不等同于某个业务项目的仓库级 Skills。
@@ -42,6 +45,7 @@
 - `jobs-macos-shell`：MacOS 原生 Shell / zsh / `.command` / Homebrew / fzf / 自检 / 批量脚本。
 - `jobs-git-repository`：Git 仓库结构、JobsMacEnvVarConfigs、安装与升级入口规则。
 - `jobs-markdown-docs`：Markdown、README、技术文档、流程图、表格、外链。
+- `jobs-obsidian-memory`：Obsidian 跨项目永久记忆、任务前读取、长期信息沉淀、去重、冲突与每日复盘。
 - `jobs-podspec`：CocoaPods、Podspec、source、资源、依赖、xcconfig。
 - `jobs-objective-c-pods`：Objective-C、本地 Pods、Core/Support、头文件、JobsOCDSL、JobsModelDSL、JobsBlock、JobsMake、点语法链式调用。
 - `jobs-swift`：Swift 文件基座、JobsSwiftDSL、点语法链式调用、懒加载、SnapKit、导航栏、控制器组织。
@@ -64,6 +68,7 @@
 
 ## 五、固定项目路径
 
+- Obsidian 永久记忆仓库：`/Users/jobs/Documents/Github/JobsGenesis/JobsConfigOS/📒CodexByObsidian`；实际 Vault：`📒CodexByObsidian/JobsCodexMemory`。
 - Swift 侧 iOS 项目：`../../JobsBaseConfig/JobsBaseConfig@JobsSwiftBaseConfigDemo`。
 - OC 侧新项目：`../../JobsOCBaseConfigDemo@ByPods`。
 - OC 侧老项目：`../../JobsBaseConfig/JobsBaseConfig@JobsOCBaseConfigDemo`。

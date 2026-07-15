@@ -1,6 +1,6 @@
 ---
 name: jobs-objective-c-pods
-description: 当任务涉及 Objective-C、本地 Pods、Core/Support/Resource、头文件引用、Pod 拆分、JobsDefineProperty、JobsOCDSL、JobsModelDSL、JobsBlock、JobsMake、import 排序或 Xcode Markdown 引用时使用。
+description: 当任务涉及 Objective-C、系统 API 的 JobsMake/JobsOCDSL 封装、Xcode CodeSnippets 对齐、本地 Pods、Core/Support/Resource、头文件引用、Pod 拆分、JobsDefineProperty、JobsModelDSL、JobsBlock、import 排序或 Xcode Markdown 引用时使用。
 ---
 
 # Jobs Objective-C 与本地 Pods 工程规范
@@ -25,7 +25,7 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support/Resource�
 - OC 侧的老项目固定指 `../../../../JobsBaseConfig/JobsBaseConfig@JobsOCBaseConfigDemo`。
 - OC 新项目由 OC 老项目升级改造而来：新项目把老项目中集成于主工程的一部分能力拆解成本地 Pods 管理，拆解过程中只做极小调整，绝大多数新项目本地 Pod 都能在老项目主工程里找到对应来源或对应功能。
 - 从 OC 新项目向 OC 老项目平移能力时，要按老项目的主工程集成方式落地：不要把新项目的 `Pod名@Pods` 目录、podspec 或 Podfile 依赖照搬成老项目的新 Pod；应把源码放回老项目主工程的对应功能目录，把资源加入老项目资源目录，把 Demo 入口、聚合头、Build Phases 和 target 引用同步到老项目现有结构。
-- OC 新项目里“Jobs 自己写的代码”定义为：除 `Pods/` 及其下辖、`JobsByPods/ManualByOCPods@Pods/` 及其下辖之外的全部代码。
+- OC 新项目里“Jobs 自己写的代码”定义为主工程 + `JobsByPods/` 下 Jobs 自建本地 Pods；排除根目录 `Pods/`、`JobsByPods/ManualByOCPods@Pods/` 和确认的外援第三方源码。扫描、批改、回归和编译都按这个边界执行。
 - 所有本地管理的 Pod 默认位于项目根目录 `JobsByPods` 文件夹下，每个 Pod 文件夹命名统一为 `Pod名@Pods`。
 - 外源性 Pod 本地化后，统一放入 `JobsByPods/ManualByOCPods@Pods` 管辖。第三方来源信息要保留，只做本地托管适配，不抹掉上游痕迹。
 - `JobsByPods/ManualByOCPods@Pods/Texture` 是明确的重型第三方 Pod 豁免项，不套用 Jobs 自建 Pod 的 `Core` / `Support` / `Resource`、根聚合头、`JobsPodspecKit.rb` 和 podspec 扁平化规范，也不因全量本地 Pod 整理而移动或改写其上游目录、源码、资源与 subspec。只有用户明确点名修改 `Texture` 本身时才进入该目录，并继续以保留上游结构为优先。
@@ -210,9 +210,17 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support/Resource�
 ### 1.10、Jobs DSL 总体思想
 
 - Jobs 的 OC / Swift DSL 本质是一套命名和调用思想：用点语法 + 链式语法让对象从创建、配置、事件、装配到布局尽量一路设置下去，减少散落赋值和割裂的中间变量。
+- `JobsMakes`、`JobsOCDSL`、`JobsModelDSL` 及相关自建 Pod 里的当前实现是 OC Jobs API 的唯一权威源；`~/Library/Developer/Xcode/UserData/CodeSnippets` 只是辅助使用记录，不能反过来定义 API。写代码前先核对封装实现，再参考代码块；两者冲突时以最新封装为准，并反哺修正代码块。
+- Jobs 自维护的上层 OC 代码不直接调用已纳入 Jobs 封装体系的系统 API：创建走 `JobsMake`，属性/方法走 `JobsOCDSL` / `JobsModelDSL`，Block 走 `JobsBlock`，事件、装配、布局走已有 Jobs 入口。发现系统 API 还没有对应封装时，先在正确的自建 Pod / 类型层补齐封装，再回到调用方落地，不把裸调用当成长期兼容方案。
+- 当前真实归属要分清：`jobsMakeView`、`jobsMakeLabel`、`jobsMakeImageView`、`jobsMakeTextField`、`jobsMakeCollectionView`、`jobsMakeScrollView` 等通用工厂位于 `JobsMakes`；`jobsMakeButton`、`UIButton.jobsInit()` 与 `jobsResetBtn*` 跨新旧按钮管线入口当前由 `JobsByOCPods` 的 `UIButton+SimplyMake` / `UIButton+UI` 承接，不得误写成 `JobsMakes` 已经导出按钮工厂。
+- 值类型、路径、动画和静态构造同样受封装规则约束：字体走 `JobsOCDefs` 的 `UIFontSystemFontOfSize`、`UIFontSystemFontOfSizeAndWeight`、`UIFontWeight*Size`、`UIFontMonospaced*Size`；颜色走 `RGB_COLOR` / `RGBA_COLOR` / `jobsMakeCor2` 等当前封装；贝塞尔路径走 `jobsMakeBezierPath` 或 `UIBezierPath.byBezierPathWithRect/OvalInRect/CGPath/RoundedRect/RoundedCorners/ArcCenter`；视图动画与转场走 `UIView.jobsAnimate/jobsAnimateWithCompletion/jobsAnimateWithOptions/jobsAnimateWithSpring/jobsTransition/jobsTransitionFromViewToView`。调用方不得因这些 API 是类方法或值工厂就继续直调 UIKit。
+- `JobsMakes` 当前还负责 `jobsMakeAction`、`jobsMakeMenu`、`jobsMakeMenuByConfiguration`、`jobsMakeContextMenuConfiguration`、`jobsMakeNib`、`jobsMakeBarButtonItemByTitle/ByImage/BySystemItem`、`jobsMakeImage` 等静态构造入口；空贝塞尔路径使用 `jobsMakeBezierPath(nil)`。新增或升级工厂时，以公开头真实签名为准，同时更新直接依赖、README 和 CodeSnippets。
+- `UIButton+SimplyMake` / `UIButton+UI` / `UIButton+UIControlState` 在部分 Pod 的 `Support` 中仍有历史副本时，以 `JobsByOCPods/Core/UIKit/UIButton` 当前实现核对 API；canonical 新增、修正按钮 API 时，所有仍参与编译的 Support 副本必须同步并做接口 / 行为对齐，但调用方不得绕过聚合头直接引用私有 `Support`。轻量 Pod 若因循环依赖不能直接依赖 canonical、但已安全依赖 `JobsBaseUI`，可通过其公开聚合头使用 `jobsMakeBaseButton` 并继续用 `JobsOCDSL` 配置；若必须保留 `jobsResetBtn*` 的跨管线语义，则先下沉 / 统一导出封装再调用。不允许退回 `[UIButton new]`、`buttonWithType:`、`setTitle:`、`setImage:` 等系统 API。
+- 上述限制作用于调用方；`JobsMakes` / `JobsOCDSL` / `JobsModelDSL` 等封装的底层实现为了承接系统管线可以调用系统 API，但不得从实现层反向复制裸调用到业务层。每次新写或修改 OC 代码后，都要按同一映射反扫整个 OC 自维护范围，不只修被点名文件。
 - Jobs DSL 的第一性是对系统 API 的二次封装。OC / Swift 两侧允许因语言、Block / closure、范型、可选值、返回类型等差异采用不同实现形态，但判断是否应该补 DSL 时，永远先看对应系统 API 是否属于当前类型的覆盖范围，而不是先看另一侧代码是否已经存在同形态实现。
 - DSL 命名统一使用 `by` + 首字母大写的属性名、单参数方法名或一个参数语义名。例如 `text` 对应 `byText(...)`，`font` 对应 `byFont(...)`，`addSubview:` 这类动作可按既有封装写成 `addOn(...)` / `byAddTo(...)` 等项目内统一语义。
 - 遇到 `BOOL` 属性且系统名以 `is` 开头时，DSL 名省略 `is`，例如 `isSelected` 写成 `bySelected(...)`，`isEnabled` 写成 `byEnabled(...)`，保持 Swift / OC 两侧命名平行。
+- UIKit 状态和可见性也按属性所属层收口：`UIControl` / `UIButton` 使用 `bySelected(...)`、`byEnabled(...)`、`byHighlighted(...)`，选中态切换使用 `byToggleSelected()`，状态读取使用 `jobs_isSelected` / `jobs_isEnabled` / `jobs_isHighlighted` / `jobs_effectiveState`；`UIView` / `CALayer` 使用各自的 `byHidden(...)`。系统代理已存在 Jobs DSL 时统一走 `byDelegate(...)`，例如 `UINavigationController` 与 `UNUserNotificationCenter`。`UINavigationBarAppearance`、`UITabBarAppearance` 的公共底色能力统一复用父类 `UIBarAppearance.byBackgroundColor(...)`，不在子类或调用方重复裸赋值。
 - DSL 覆盖范围不只限于 Apple 原生 API。Jobs 自建 Model、配置对象、业务基础对象也要按同一套思路封装；OC 侧重点体现在 `JobsModel` 的 `JobsModelDSL`，例如 `UIViewModel`、`UITextModel`、`UIButtonModel` 等大 Model / 子 Model 都应支持链式配置。
 - 对系统 API 进行二次封装成 JobsOCDSL 时，覆盖标准是当前类型自己声明的全部属性、0 个入参数方法、1 个入参数方法。父类已有能力放在父类 DSL，不在子类重复铺开；有返回值的方法默认也要收口为可继续链下去的主对象，除非该能力天然是查询或明确的终止动作。
 - OC 因为 Block 类型繁多，所有可复用 Block typedef 必须集中放入 `JobsBlock` 管理；新增 DSL 前先查 `JobsBlock` 是否已有可复用类型，缺失再补到合适的 `JobsBlock.h`、`ReturnByCertainParametersBlock.h` 或其它既有分类头里，不在 DSL 头文件里私自散落 typedef。
@@ -229,7 +237,7 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support/Resource�
 - 父子类 DSL 调用顺序按 `1.10.1` 执行；如果父类 DSL 会导致返回类型降级，应补充能返回主对象的 block DSL 或当前层 DSL，而不是拆成第二个接收者调用。
 - 在本地 Pod 里写 `UITableView`、`UIButton`、`UITextField`、`UILabel` 等 JobsOCDSL 链时，编译通过不是唯一目标，还要检查链条类型是否中途被父类 DSL 降级。例如 `UITableView` 先调 `bySeparatorStyle`、`byDelegate`、`byDataSource`、`byShowsVerticalScrollIndicator` 等本层 / `UIScrollView` 层能力，再调 `byBgColor`、`addOn`、`byAdd` 等 `UIView` 层能力；不要把父类 DSL 插在中间导致后续子类 DSL 失效。
 - 写 DSL 示例、Xcode 代码片段和工程配置文档时，点语法以行为最小单位提行书写，方便按行删除或注释。跟在某一行 DSL 后面的解释统一用两根双斜杠 `//`；单独成行的段落说明统一用三根双斜杠 `///`。
-- 写 Objective-C 代码、DSL 示例、懒加载 getter 或常见 UI 配置前，先查看 `~/Library/Developer/Xcode/UserData/CodeSnippets` 下是否已有可复用的 Xcode 代码块；能复用既有代码块时，优先沿用代码块里的命名、占位符和链式组织方式。
+- 写 Objective-C 代码、DSL 示例、懒加载 getter 或常见 UI 配置前，先核对实际封装 API，再查看 `~/Library/Developer/Xcode/UserData/CodeSnippets` 下是否已有可复用的 Xcode 代码块；代码块未过时时，优先沿用其命名、占位符和链式组织方式。
 - 如果本轮更新了 OC 侧封装、DSL、JobsMake、Block typedef 或固定写法，必须同步检查并反哺 `~/Library/Developer/Xcode/UserData/CodeSnippets` 里的相关 `.codesnippet`，让代码块示例跟真实 API 保持一致；不要让片段继续传播旧封装、旧命名或散落赋值写法。
 - `~/Library/Developer/Xcode/UserData/CodeSnippets` 里的 OC 代码片段默认采用“全暴露写法”：常用配置、事件、装配、约束和兼容分支尽量完整列出，让使用者按需求删除或注释，不让使用者临场补 API。片段必须优先传播 Jobs 封装、JobsMake、JobsOCDSL、JobsModelDSL 和聚合头边界，不能为了示例短而退回裸系统 API。
 - 每次完善或纠错 OC 代码片段后，必须按同一写法反扫 OC 新工程和老工程应用层，重点查 `rowHeight =`、`contentInset =`、`contentInsetAdjustmentBehavior =`、`backgroundColor =`、`delegate =`、`dataSource =` 等已有 DSL 覆盖的裸赋值。命中 Jobs 自己维护的主工程或本地 Pod 代码时改成链式；外援 `Pods/`、`ManualByOCPods@Pods/` 和确认为第三方源码的目录不处理。
@@ -243,24 +251,29 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support/Resource�
 - 对齐 [**Swift**](https://www.swift.org/) 项目里的 [**SnapKit**](https://github.com/SnapKit/SnapKit) DSL 时，OC 侧使用 [**Masonry**](https://github.com/SnapKit/Masonry) 在 `JobsOCDSL/Core/ThirdParty/Masonry` 下补公共链式入口。旧 Pod 私有的 `byAdd`、`setMasonryBy`、网格算法、动画算法不要直接搬进公共 DSL，除非先拆掉业务和历史耦合。
 
   ```objc
-  UILabel *label = UILabel.alloc.init
-      .byText(@"Demo")
-      .byFont([UIFont systemFontOfSize:16])
-      .byTextAlignment(NSTextAlignmentCenter)
-      .byNumberOfLines(1)
-      .byAddTo(self.view, ^(MASConstraintMaker *make) {
-          make.center.equalTo(self.view);
-          make.size.mas_equalTo(CGSizeMake(JobsWidth(200), JobsWidth(20)));
-      });
+  UILabel *label = jobsMakeLabel(^(__kindof UILabel * _Nullable label) {
+      label
+          .byText(@"Demo")
+          .byFont(UIFontSystemFontOfSize(16))
+          .byTextAlignment(NSTextAlignmentCenter)
+          .byNumberOfLines(1)
+          .byAddTo(self.view, ^(MASConstraintMaker *make) {
+              make.center.equalTo(self.view);
+              make.size.mas_equalTo(CGSizeMake(JobsWidth(200), JobsWidth(20)));
+          });
+  });
   ```
 
 #### 1.10.2、`JobsMake` + `JobsOCDSL` UI 创建公约
 
-- UI 创建统一优先使用 `JobsMakes@Pods/JobsMakes.h` 里的 `jobsMakeXXX` 形成创建 Block，例如 `jobsMakeLabel`、`jobsMakeButton`、`jobsMakeTextView`、`jobsMakeTextField`、`jobsMakeTableViewByPlain`、`jobsMakeCollectionView`。`JobsMake` 只负责创建对象和提供闭包入口，不在里面扩展业务配置。
+- UI 创建统一优先使用真实归属下的 `jobsMakeXXX` 形成创建 Block：`JobsMakes@Pods/JobsMakes.h` 提供 `jobsMakeView`、`jobsMakeLabel`、`jobsMakeImageView`、`jobsMakeTextView`、`jobsMakeTextField`、`jobsMakeCollectionView`、`jobsMakeScrollView`、`jobsMakeStackView`、`jobsMakeSwitch`、`jobsMakeSlider`、`jobsMakeProgressView`、`jobsMakeSegmentedControl`、`jobsMakeContextualAction`、`jobsMakeSwipeActionsConfiguration` 等；按钮的 `jobsMakeButton` 与表格的 `jobsMakeTableViewByPlain/Grouped/InsetGrouped` 当前由 `JobsByOCPods` 对应分类提供。不要因为名字都以 `jobsMake` 开头就误判所属 Pod。创建入口只负责创建对象和提供闭包，不在里面扩展业务配置。
+- 业务配置对象的工厂留在业务能力自己的 Pod：`jobsMakeOCKeyboardConfig` 归 `JobsOCKeyboardMgr` 的 `JobsOCKeyboardConfig` 公共头导出，`JobsMakes` 不得为它反向依赖 `JobsOCKeyboardMgr`。发现 `基础 DSL -> JobsMakes -> 业务 Pod -> 基础 DSL` 这类环时，优先把工厂迁回模型 / 业务 Pod 的真实归属并更新调用方直接依赖，不以搜索路径或暂留裸 API 掩盖循环。
+- UIButton 常态标题、标题色、字体、图片、背景图、背景色、圆角和图文间距优先使用 `jobsResetBtnTitle`、`jobsResetBtnTitleCor`、`jobsResetBtnTitleFont`、`jobsResetBtnImage`、`jobsResetBtnBgImage`、`jobsResetBtnBgCor`、`jobsResetBtnCornerRadiusValue`、`jobsResetImagePlacement_Padding`，让新旧管线在封装内部收口。高亮、选中、禁用状态确实需要不同资源时，使用当前实现已提供的 `highlightedStateImageBy(...)`、`selectedStateImageBy(...)`、`disabledStateImageBy(...)` 等 state-specific Jobs API。任意状态及 `UIControlStateSelected | UIControlStateHighlighted` 这类组合态，按资源类型使用 `titleForStateBy`、`attributedTitleForStateBy`、`titleColorForStateBy`、`titleShadowColorForStateBy`、`imageForStateBy`、`backgroundImageForStateBy`、`preferredSymbolConfigurationForStateBy`；复制 / 查询状态资源时使用对应 `titleByState`、`attributedTitleByState`、`titleColorByState`、`titleShadowColorByState`、`imageByState`、`backgroundImageByState`、`preferredSymbolConfigurationByState`，不用常态 API 抹平状态语义，也不退回系统 setter / getter。
+- `UISegmentedControl` 创建走 `jobsMakeSegmentedControl(items, block)`，写入选中项走 `bySelectedSegmentIndex(...)`，读取走 `jobs_selectedSegmentIndex`；`UISwitch` 写入 / 读取状态使用 `byOn(...)` / `jobs_isOn`；Auto Layout 开关使用 `UIView.byTranslatesAutoresizingMaskIntoConstraints(...)`。`UIStackView`、`UISwitch`、`UIContextualAction`、`UISwipeActionsConfiguration` 分别使用当前类型 DSL，不再在上层散落系统属性赋值。
 - UI 子视图默认使用懒加载 getter 创建和配置。不要在 `setupSubviews`、`viewDidLoad`、`init` 或某个大方法里连续 `UIView.new` / `UILabel.new` / `UIImageView.new` / `UITableView alloc init...` 再散落赋值、添加和约束。`setupSubviews` 只负责触发懒加载、添加层级、部署约束或做极少量编排。
-- 懒加载 getter 内部必须优先用 `JobsMake` + `JobsOCDSL` / `JobsModelDSL` 收口：创建、基础属性、事件、进入父视图、Masonry 约束尽量通过链式写法完成。除非当前类型确实缺 DSL，否则不要回退到 `_view = UIView.new; _view.xxx = ...; [parent addSubview:_view];` 这种散落写法。
+- 懒加载 getter 内部必须用 `JobsMake` + `JobsOCDSL` / `JobsModelDSL` 收口：创建、基础属性、事件、进入父视图、Masonry 约束通过链式写法完成。当前类型缺 DSL 时先补封装，不回退到 `_view = UIView.new; _view.xxx = ...; [parent addSubview:_view];` 这种散落写法。
 - 需要保存约束对象时，可以在懒加载 getter 的 `byAdd` / `byOn` / `mas_makeConstraints` block 中赋值给 ivar，例如保存高度约束；但对象本身仍应由 getter 负责创建，不把整棵 UI 树塞进一个方法。
-- `JobsMake` 的 Block 内部，属性赋值优先使用 `JobsOCDSL` / `JobsModelDSL` 点语法链式配置；不要回退成散落的 `label.text = ...`、`view.backgroundColor = ...`，除非目标属性当前还没有 DSL，或者临时保留旧写法等待补 DSL。
+- `JobsMake` 的 Block 内部，属性赋值使用 `JobsOCDSL` / `JobsModelDSL` 点语法链式配置；不要回退成散落的 `label.text = ...`、`view.backgroundColor = ...`。目标属性没有 DSL 时先在属性所属类型补齐，不在调用方留“临时裸写法”。
 - UI 装配顺序固定为：先当前类本层 DSL，再父类 DSL，再进入 `UIView+DSL` / `Masonry+DSL` 的装配入口。当前 `UIView+MasonryDSL` 的 `byAddTo(superview, makeBlock)` 是“加父视图 + 首次约束”的组合入口；如果后续拆成独立 `UIView+DSL` 加父视图入口，也必须保证加载到父视图早于 [**Masonry**](https://github.com/SnapKit/Masonry) 约束。
 - 能拆开的动作就拆开表达：优先写 `addOn(...).byAdd(...)`，把“进父视图”和“布约束”作为两个明确步骤；`byAddTo(...)` 只保留兼容，不作为默认新增写法。
 - 如果某些效果依赖真实 `frame`，例如渐变层、圆角路径、局部切角、阴影路径、动画初始位置等，可以放在 `byAddTo` + [**Masonry**](https://github.com/SnapKit/Masonry) + `layoutIfNeeded` 之后执行；因此“加父视图和约束”通常靠后，但不一定是整个链条的最后一步。
@@ -270,14 +283,23 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support/Resource�
 - `UITableView` / `UICollectionView` 后续免协议 Block 化封装要对照 [**Swift**](https://www.swift.org/) 侧 `JobsSwiftDSL`：优先支持 `byTarget`、`numberOfRowsInSection` / `numberOfItemsInSection`、`cellForRowAt` / `cellForItemAt`、`didSelect...` 等常用入口；协议代理仍可保留，Block 配置作为常用页面的轻量写法。
 - 写文档和示例时，必须体现这个统一模型：`JobsMake` 创建对象，`JobsOCDSL` / `JobsModelDSL` 配属性，`UIView+DSL` 添加父视图，[**Masonry**](https://github.com/SnapKit/Masonry) DSL 部署约束，frame 依赖效果在约束刷新之后处理。
 
+#### 1.10.3、Masonry 无警告约束与临时布局阶段
+
+- 新写或修改 UI 后，必须检查控制台 `Unable to simultaneously satisfy constraints`、`UIView-Encapsulated-Layout-*` 和 `UITableViewAlertForLayoutOutsideViewHierarchy`。按日志里的视图类型、约束地址和创建代码定位来源；禁止删除已成立的业务约束、吞日志或用异常捕获伪装无警告。
+- `UITableViewCell` / `UICollectionViewCell` 测量时可能临时获得 `44` 或 `0` 的系统封装高度。固定头部、上下边距、折叠内容等只在真实行高下成立时，保留原数值，把其中可压缩的一条写成 `.priority(999)`；真实高度阶段视觉不变，临时阶段不与系统 `UIView-Encapsulated-Layout-Height` 硬冲突。
+- 折叠容器禁止同时以必选优先级声明“高度为 `0`”和“上下均有正间距”。保存高度约束并把零高度或非关键底边设为 `999`，展开时只 `setOffset:` / `mas_updateConstraints`，不要重复 `mas_makeConstraints`。
+- 视图或 TableView 尚未挂到 `window` 时，不调用 `layoutIfNeeded`、`beginUpdates/endUpdates` 或仅为刷新主题执行 `reloadData`。初始化只准备数据；强制布局用 `self.window` / `view.window` 守卫，或延后到 `viewDidAppear:` / `didMoveToWindow`。
+- 首次创建用 `mas_makeConstraints` / `byAdd`，仅常量变化用保存约束或 `mas_updateConstraints`，结构变化才用 `mas_remakeConstraints`。禁止在 cell 复用、配置和 `layoutSubviews` 中重复叠加同义约束。
+- 导航控制器、TabBar 子控制器和 titleView 在根窗口仍为 `0×0` 时，不主动触发布局。先完成 `window.rootViewController` 与 `makeKeyAndVisible`，再刷新依赖真实宽高、安全区或导航栏边距的 UI。
+
   ```objc
   _titleLab = jobsMakeLabel(^(__kindof UILabel * _Nullable label) {
       label
           .byText(@"标题")
-          .byFont([UIFont boldSystemFontOfSize:16])
+          .byFont(UIFontWeightBoldSize(16))
           .byTextAlignment(NSTextAlignmentCenter)
           .byNumberOfLines(1)
-          .byBgColor(UIColor.clearColor)
+          .byBgColor(JobsClearColor)
           .byAddTo(self.contentView, ^(MASConstraintMaker *make) {
               make.edges.equalTo(self.contentView).insets(UIEdgeInsetsMake(8, 12, 8, 12));
           });
@@ -286,17 +308,19 @@ description: 当任务涉及 Objective-C、本地 Pods、Core/Support/Resource�
 
 #### 1.10.3、图标资源规则
 
-- OC 项目中需要用到 UI 图标时，先去 [**iconfont**](https://www.iconfont.cn/) 找合适图标；优先复用项目已有图标库、命名和视觉风格，不随手使用来源不明的图片素材。
+- OC 项目中需要用到 UI 图标时，优先复用项目已有图标库、命名和视觉风格；图标可使用 SF Symbols 等系统图标，也可来自 [**iconfont**](https://www.iconfont.cn/)，不随手使用来源不明的图片素材。
+- OC 新、老项目的 Demo 入口页面中，每个 cell 前的图标必须与当前入口内容及功能语义贴合，并保证同一页面内不重复；来自 [**iconfont**](https://www.iconfont.cn/) 的图标必须下载到本地并放入当前工程实际使用的 `*.xcassets`，禁止通过 URL 或其它方式远程引用。
 - 新图标落地时，按当前项目资源体系放入 `Assets.xcassets`、自建 Pod 的 `Resource` / resource bundle 或既有图标目录，并同步 Xcode 文件引用、podspec 资源声明和 README 资源说明。
 - 如果采用字体图标方式集成，要记录并统一维护图标名称、unicode / class 信息；业务代码里不要散落硬编码 codepoint，优先通过统一常量、枚举、模型或封装入口引用。
 
 ### 1.11、`*.h` 头文件 `#import` 排序
 
+- 每次新写、修改或批量整理 OC 头文件导入区，都必须同时全文扫描 OC 新项目和老项目中 Jobs 自己维护的 `*.h`；不只修用户点名文件，也不只扫当前子 Pod。继续排除 `Pods/`、`JobsByPods/ManualByOCPods@Pods/`、生成目录和确认的外援第三方源码。
 - [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html) 头文件顶部先写一般性 `#import`，再写双通道保护性 `#if __has_include(...)`。一般性写法和双通道保护性写法之间保留一个空行。
 - 一般性 `#import` 优先写系统 / Apple / Darwin / 底层头文件，再写本文件直接依赖的普通头文件；越靠近底层越靠上，例如 ObjC runtime / message、C 系统库、`CoreFoundation`、`Foundation`、`UIKit`、`WebKit`、`AVFoundation` 等系统头按底层到上层排列。
 - Jobs 自己写的代码里，系统 / Apple / Darwin / ObjC runtime 头文件必须写在对应同名 `*.h` 文件的一般性 import 区域，`*.m` / `*.mm` 不单独导入。不限于 `#import <objc/runtime.h>`：例如 `<objc/message.h>`、`<Foundation/Foundation.h>`、`<UIKit/UIKit.h>`、`<WebKit/WebKit.h>`、`<AVFoundation/AVFoundation.h>`、`<AudioToolbox/AudioToolbox.h>`、`<Photos/Photos.h>`、`<Security/Security.h>`、`<CommonCrypto/CommonCrypto.h>`、`<os/lock.h>`、`<pthread.h>`、`<sys/sysctl.h>`、`<stdint.h>`、`<ctype.h>` 等都按这条执行。即使只有实现文件里调用相关 API，也要由同名头文件统一承接。
 - 如果已经写了 `#import <UIKit/UIKit.h>`，则同一个 import 区域不再重复写 `#import <Foundation/Foundation.h>`，因为 `UIKit` 已经包含 `Foundation`。
-- 一般性 `#import` 之间不留空行，一行一个；双通道保护性写法之间保留一个空行。不同模块的双通道保护性 `#if __has_include(...)` 块不能紧贴连写，前一个模块的 `#endif` 和后一个模块的 `#if __has_include(...)` 之间必须空一行。
+- 把导入区按“普通单个 `#import` ”和“完整双通道保护块”视为相邻导入单元：普通↔普通之间不留空行；只要相邻两个单元中任意一个是双通道保护块，两者之间必须且只能保留一行空行。这覆盖普通↔双通道、双通道↔普通、双通道↔双通道三种组合；双通道块内部四段结构仍紧凑连写，不插入空行。
 - `#import` 导入区和下面的正文内容区之间必须保留一行空行。正文内容区包括 `NS_ASSUME_NONNULL_BEGIN`、`@interface`、`@implementation`、`@protocol`、`@class`、`typedef`、`NS_INLINE`、`static`、`#pragma` 等；例如 `#import "DefineProperty.h"` 后面不能紧贴 `NS_ASSUME_NONNULL_BEGIN`，必须空一行。
 - 双通道保护性区域先写外源性 Pod，再写内源性 Pod。外源性 Pod 指 OC 项目 `Pods/` 目录下的模块；内源性 Pod 指 OC 项目 `JobsByPods/` 下除 `ManualByOCPods@Pods/` 以外的模块。
 - 内源性 Pod 的双通道保护性写法排序：`JobsOCProtocols` 靠前，中间写其他内源 Pod，`JobsBlock` 和 `JobsOCDefs` 靠后；其中 `JobsOCDefs` 通常作为宏定义兜底放在最后。
