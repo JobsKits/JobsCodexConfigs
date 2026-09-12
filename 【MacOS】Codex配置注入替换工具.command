@@ -1,8 +1,8 @@
 #!/bin/zsh
 # 脚本自述：
 # - 脚本名称：【MacOS】Codex配置注入替换工具.command
-# - 核心用途：执行“Codex配置注入替换工具”对应的本机环境配置任务。
-# - 影响范围：可能安装、更新或修改当前用户的工具链与配置文件。
+# - 核心用途：部署 Codex 全局 AGENTS.md，并把现行 JobsSkills 仓库注册到 Codex 配置。
+# - 影响范围：可能安装或更新工具链，修改当前用户的 AGENTS.md 与 config.toml；不覆盖 JobsSkills 工作树。
 # - 运行提示：运行后会先打印内置自述；终端模式按回车确认后继续，按 Ctrl+C 可取消。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")" && pwd)"
@@ -17,7 +17,7 @@ resolve_toolkit_dir() {
   local scan_depth=0
 
   while [[ -n "$candidate_dir" && "$candidate_dir" != "/" && "$scan_depth" -lt 8 ]]; do
-    if [[ -f "${candidate_dir}/AGENTS.md" && -d "${candidate_dir}/skills" ]]; then
+    if [[ -f "${candidate_dir}/AGENTS.md" ]]; then
       cd "$candidate_dir" && pwd
       return 0
     fi
@@ -31,13 +31,13 @@ resolve_toolkit_dir() {
 
 TOOLKIT_DIR="$(resolve_toolkit_dir)"
 GLOBAL_AGENTS_PATH="${TOOLKIT_DIR}/AGENTS.md"
-SKILLS_SOURCE_DIR="${TOOLKIT_DIR}/skills"
 TARGET_CODEX_DIR="${TARGET_CODEX_DIR:-${HOME}/.codex}"
 TARGET_CODEX_CONFIG="${TARGET_CODEX_CONFIG:-${TARGET_CODEX_DIR}/config.toml}"
 TARGET_SKILLS_DIR="${TARGET_SKILLS_DIR:-${HOME}/.agents/skills}"
+JOBS_SKILLS_REPOSITORY="https://github.com/JobsKits/JobsSkills.git"
 BREW_BIN=""
 TEMP_WORK_DIRS=()
-DEPLOYED_SKILL_NAMES=()
+REGISTERED_SKILL_NAMES=()
 # 按当前输出级别记录终端信息，并同步写入脚本日志。
 log()            { echo -e "$1" | tee -a "$LOG_FILE"; }
 # 按当前输出级别记录终端信息，并同步写入脚本日志。
@@ -102,8 +102,8 @@ show_script_intro_and_wait() {
   clear
   print -r -- '============================== 脚本内置自述 =============================='
   print -r -- '脚本名称：【MacOS】Codex配置注入替换工具.command'
-  print -r -- '核心用途：执行“Codex配置注入替换工具”对应的本机环境配置任务。'
-  print -r -- '影响范围：可能安装、更新或修改当前用户的工具链与配置文件。'
+  print -r -- '核心用途：部署 Codex 全局 AGENTS.md，并把现行 JobsSkills 仓库注册到 Codex 配置。'
+  print -r -- '影响范围：可能安装或更新工具链，修改当前用户的 AGENTS.md 与 config.toml；不覆盖 JobsSkills 工作树。'
   print -r -- '取消方式：确认前按 Ctrl+C 终止，不会继续执行后续业务。'
   print -r -- '============================================================================'
   echo ""
@@ -360,22 +360,45 @@ validate_toolkit_layout() {
     exit 1
   fi
 
-  if [[ ! -d "$SKILLS_SOURCE_DIR" ]]; then
-    error_echo "未找到 Skills 源目录：${SKILLS_SOURCE_DIR}"
+  if [[ ! -d "$TARGET_SKILLS_DIR" ]]; then
+    error_echo "未找到 JobsSkills 工作树：${TARGET_SKILLS_DIR}"
     exit 1
   fi
 
+  if ! command -v git >/dev/null 2>&1; then
+    error_echo "缺少 Git，无法核验 JobsSkills 工作树。请先安装 Xcode Command Line Tools 或 Git。"
+    exit 1
+  fi
+
+  if ! git -C "$TARGET_SKILLS_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    error_echo "JobsSkills 路径不是 Git 仓库：${TARGET_SKILLS_DIR}"
+    exit 1
+  fi
+
+  local skills_remote=""
+  skills_remote="$(git -C "$TARGET_SKILLS_DIR" remote get-url origin 2>/dev/null || true)"
+  case "$skills_remote" in
+    "https://github.com/JobsKits/JobsSkills"|"$JOBS_SKILLS_REPOSITORY"|"git@github.com:JobsKits/JobsSkills.git"|"ssh://git@github.com/JobsKits/JobsSkills.git")
+      ;;
+    *)
+      error_echo "JobsSkills origin 不匹配：${skills_remote:-<缺失>}"
+      exit 1
+      ;;
+  esac
+
   local first_skill=""
-  first_skill="$(find "$SKILLS_SOURCE_DIR" -mindepth 2 -maxdepth 2 -name 'SKILL.md' -print -quit 2>/dev/null)"
+  first_skill="$(find -L "$TARGET_SKILLS_DIR" -mindepth 2 -maxdepth 2 -name 'SKILL.md' -type f -print -quit 2>/dev/null)"
   if [[ -z "$first_skill" ]]; then
-    error_echo "Skills 源目录中没有发现任何 SKILL.md：${SKILLS_SOURCE_DIR}"
+    error_echo "JobsSkills 中没有发现任何 SKILL.md：${TARGET_SKILLS_DIR}"
     exit 1
   fi
 
   success_echo "工具包目录检查通过。"
   gray_echo "工具包根目录：${TOOLKIT_DIR}"
   gray_echo "全局 AGENTS 源：${GLOBAL_AGENTS_PATH}"
-  gray_echo "Skills 源目录：${SKILLS_SOURCE_DIR}"
+  gray_echo "JobsSkills 工作树：${TARGET_SKILLS_DIR}"
+  gray_echo "JobsSkills 标准远端：${JOBS_SKILLS_REPOSITORY}"
+  gray_echo "JobsSkills origin：${skills_remote}"
   gray_echo "目标 .codex：${TARGET_CODEX_DIR}"
   gray_echo "目标 AGENTS：${TARGET_CODEX_DIR}/AGENTS.md"
   gray_echo "目标 config.toml：${TARGET_CODEX_CONFIG}"
@@ -452,69 +475,22 @@ deploy_global_agents() {
 
   success_echo "全局 AGENTS.md 部署完成。"
 }
-# 封装 deploy_user_skills 对应的独立处理逻辑。
-deploy_user_skills() {
-  # 单向部署本仓库 skills 到 Codex 用户级 Skills 目录；不从系统位置回写到仓库。
-  if [[ ! -d "$SKILLS_SOURCE_DIR" ]]; then
-    error_echo "Skills 源目录不存在，禁止继续：${SKILLS_SOURCE_DIR}"
+# 从现行 JobsSkills 工作树收集可注册的 Skill，不复制或删除仓库内容。
+collect_user_skills() {
+  REGISTERED_SKILL_NAMES=()
+  local skill_file=""
+  local skill_name=""
+  while IFS= read -r -d '' skill_file; do
+    skill_name="${skill_file:h:t}"
+    REGISTERED_SKILL_NAMES+=("$skill_name")
+  done < <(find -L "$TARGET_SKILLS_DIR" -mindepth 2 -maxdepth 2 -name 'SKILL.md' -type f -print0)
+
+  if (( ${#REGISTERED_SKILL_NAMES[@]} == 0 )); then
+    error_echo "JobsSkills 中没有可注册的 Skill：${TARGET_SKILLS_DIR}"
     exit 1
   fi
 
-  if [[ -e "$TARGET_SKILLS_DIR" && ! -d "$TARGET_SKILLS_DIR" ]]; then
-    error_echo "目标 Skills 路径已存在但不是目录：${TARGET_SKILLS_DIR}"
-    exit 1
-  fi
-
-  mkdir -p "$TARGET_SKILLS_DIR" || {
-    error_echo "创建目标 Skills 目录失败：${TARGET_SKILLS_DIR}"
-    exit 1
-  }
-
-  info_echo "开始部署 Jobs Skills。"
-  gray_echo "来源：${SKILLS_SOURCE_DIR}"
-  gray_echo "目标：${TARGET_SKILLS_DIR}"
-
-  local deployed_count=0
-  local source_skill_dir=""
-  while IFS= read -r -d '' source_skill_dir; do
-    local skill_name="$(basename "$source_skill_dir")"
-    local source_skill_file="${source_skill_dir}/SKILL.md"
-    local target_skill_dir="${TARGET_SKILLS_DIR}/${skill_name}"
-
-    if [[ ! -f "$source_skill_file" ]]; then
-      warn_echo "跳过没有 SKILL.md 的目录：${source_skill_dir}"
-      continue
-    fi
-
-    if [[ -e "$target_skill_dir" ]]; then
-      warn_echo "替换同名 Skill：${target_skill_dir}"
-      if ! run_command /bin/rm -rf -- "$target_skill_dir"; then
-        error_echo "清理旧 Skill 失败：${target_skill_dir}"
-        exit 1
-      fi
-    fi
-
-    if ! run_command /usr/bin/ditto "$source_skill_dir" "$target_skill_dir"; then
-      error_echo "部署 Skill 失败：${skill_name}"
-      exit 1
-    fi
-
-    if [[ ! -f "${target_skill_dir}/SKILL.md" ]]; then
-      error_echo "部署后缺少 SKILL.md：${target_skill_dir}"
-      exit 1
-    fi
-
-    DEPLOYED_SKILL_NAMES+=("$skill_name")
-    deployed_count=$((deployed_count + 1))
-    success_echo "已部署 Skill：${skill_name}"
-  done < <(find "$SKILLS_SOURCE_DIR" -mindepth 1 -maxdepth 1 -type d -print0)
-
-  if (( deployed_count == 0 )); then
-    error_echo "没有部署任何 Skill，请检查：${SKILLS_SOURCE_DIR}"
-    exit 1
-  fi
-
-  success_echo "Jobs Skills 部署完成，共 ${deployed_count} 个。"
+  success_echo "JobsSkills 扫描完成，共发现 ${#REGISTERED_SKILL_NAMES[@]} 个 Skill；未覆盖工作树。"
 }
 # 封装 toml_escape_string 对应的独立处理逻辑。
 toml_escape_string() {
@@ -527,8 +503,8 @@ toml_escape_string() {
 update_codex_skills_config() {
   # Codex 官方会扫描 $HOME/.agents/skills；Codex++ 管理器的 Skills 页签通常读取 ~/.codex/config.toml 中的 [[skills.config]] 条目。
   # 因此这里在不回写仓库、不替换整个 ~/.codex 的前提下，追加一个受控配置块，让 Codex++ 管理器也能看到这些 Jobs Skills。
-  if (( ${#DEPLOYED_SKILL_NAMES[@]} == 0 )); then
-    warn_echo "没有已部署的 Skill，跳过 config.toml Skills 注册。"
+  if (( ${#REGISTERED_SKILL_NAMES[@]} == 0 )); then
+    warn_echo "没有已发现的 Skill，跳过 config.toml Skills 注册。"
     return 0
   fi
 
@@ -565,11 +541,11 @@ update_codex_skills_config() {
     cat "$temp_config"
     echo ""
     echo "$begin_marker"
-    echo "# 由 JobsCodexConfigs 单向部署脚本生成。"
-    echo "# 目的：让 Codex++ 管理器的 Skills 页签识别本仓库部署到用户级目录的 Skills。"
+    echo "# 由 JobsCodexConfigs 配置注入脚本生成。"
+    echo "# 目的：让 Codex++ 管理器的 Skills 页签识别 JobsSkills 用户级仓库。"
     echo "# 官方 Codex 的真实 Skill 文件仍位于：${TARGET_SKILLS_DIR}"
     local skill_name=""
-    for skill_name in "${DEPLOYED_SKILL_NAMES[@]}"; do
+    for skill_name in "${REGISTERED_SKILL_NAMES[@]}"; do
       local skill_file="${TARGET_SKILLS_DIR}/${skill_name}/SKILL.md"
       if [[ ! -f "$skill_file" ]]; then
         warn_echo "跳过注册不存在的 Skill 文件：${skill_file}"
@@ -684,8 +660,8 @@ print_finish_summary() {
   success_echo "全局 AGENTS：${TARGET_CODEX_DIR}/AGENTS.md"
   success_echo "用户级 Skills：${TARGET_SKILLS_DIR}"
   success_echo "Codex Skills 配置：${TARGET_CODEX_CONFIG}"
-  if (( ${#DEPLOYED_SKILL_NAMES[@]} > 0 )); then
-    success_echo "已部署 Skills：${(j:, :)DEPLOYED_SKILL_NAMES}"
+  if (( ${#REGISTERED_SKILL_NAMES[@]} > 0 )); then
+    success_echo "已注册 Skills：${(j:, :)REGISTERED_SKILL_NAMES}"
   fi
   gray_echo "日志文件：${LOG_FILE}"
   highlight_echo "======================================================================="
@@ -708,8 +684,8 @@ main() {
   stop_codex_runtime "部署前先停止 Codex，避免运行中读取旧配置。"
   # 执行 deploy_global_agents 对应的核心业务步骤。
   deploy_global_agents
-  # 执行 deploy_user_skills 对应的核心业务步骤。
-  deploy_user_skills
+  # 扫描现行 JobsSkills 工作树，只收集注册项而不覆盖仓库。
+  collect_user_skills
   # 执行 update_codex_skills_config 对应的核心业务步骤。
   update_codex_skills_config
   # 执行 restart_codex_runtime 对应的核心业务步骤。
