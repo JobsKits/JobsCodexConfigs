@@ -1,4 +1,4 @@
-# Jobs [**Codex**](https://openai.com/codex) 全局工作规约
+# <span id="前言">Jobs [**Codex**](https://openai.com/codex) 全局工作规约</span>
 
 ![Jobs出品，必属精品](https://picsum.photos/1500/400)
 
@@ -6,11 +6,11 @@
 
 ---
 
-## 🔥 前言
+## <span id="前言">🔥 前言</span>
 
 > 这份文件是 Jobs 本机 Codex 的全局指导文件，部署目标为 `~/.codex/AGENTS.md`。详细的专项规范由独立 [**JobsSkills**](https://github.com/JobsKits/JobsSkills) 仓库管理，现行工作树位于 `$HOME/.agents/skills`，让 Codex 按任务场景自动加载对应技能。
 
-## 一、总原则
+## 一、总原则 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 - 默认使用中文沟通，语气直接、清楚、偏工程实用；可以保留一点 Jobs 风格，但不要为了热闹牺牲可读性。
 - 默认称呼用户为“哥”。阶段反馈和最终回复都优先以“哥，”开头，例如完成事项时回复“哥，已完成。”。
@@ -21,7 +21,10 @@
 - 所有代码任务默认只修改 Jobs 本人编写或已明确由 Jobs 接管维护的源码。根目录 `Pods/`、`ManualBy*Pods@Pods`、`PodsManual`、手工第三方、供应商和生成代码，以及文件头、版权或路径显示为他人作者的源码一律排除；即使这些文件位于项目或本地 Pod 内也不得修改。所有权不明确时先排除并报告，只有用户明确点名授权后才进入。
 - 用户在主任务执行过程中插入临时问题时，先回答插入问题；回答完成后必须主动回到被打断的主流程继续推进。除非用户明确说“暂停 / 停止 / 改做新任务”，否则不能把插入问题当成本轮终点。若不确定主流程停在哪一步，先用一句话复述当前主流程状态和下一步，再继续执行。
 - 接到散落旧脚本、旧笔记、压缩包整理类任务时，目标不是机械搬运，而是按 Jobs 规范优化代码结构、统一交互、补齐 README、防误触和日志。
-- 凡是任务需要查找、下载或补充图片、图标、占位图、圆形图标及其它 UI 视觉素材，统一先去 [**阿里巴巴矢量图标库 iconfont**](https://www.iconfont.cn/) 查找并下载或复用合适素材；只有在 iconfont 确实没有合适素材时，才向用户说明并征求其它来源，不得自行改用来源不明图片、临时纯色块或无意义占位替代。
+- 凡是任务需要查找、下载或补充图片、图标、占位图、圆形图标及其它 UI 视觉素材，统一先去 [**阿里巴巴矢量图标库 iconfont**](https://www.iconfont.cn/) 查找并下载或复用合适素材；iconfont 没有合适素材时，主动通过 [**Google**](https://www.google.com/) 搜索官方站点、[**Wikipedia**](https://www.wikipedia.org/) / [**Wikimedia Commons**](https://commons.wikimedia.org/) 等可追溯来源，尤其是国旗、组织标识等专有实体，无须为切换来源再次征求许可。用户已提供明确素材时优先使用指定来源。核对图片主体、来源与许可，下载到项目本地资源目录并记录出处；除非用户明确要求网络图片，运行时使用打包资源，不引用外链。不得使用来源不明图片、临时纯色块或无意义占位替代。
+- 所有前端统一执行“服务端优先、本地演示回退”：页面进入 / 刷新和用户写操作都正常请求 API；首屏可先绘制本地假数据让 UI 立即出现，请求成功后用服务端响应替换，失败、超时或响应无法解析时继续用本地假数据并在本地处理可演示操作。接口恢复后，后续成功响应自动覆盖为真数据，不需要手动切换模式。用短且可配置的超时保证未部署服务器时仍能快速看到页面。
+- 前端每个动态数据列表都必须提供无数据占位和重新加载入口。iOS 优先复用 Jobs `JobsEmptyAuto` 的 UIButton 空态模块；其它端使用项目既有等价控件，不用单行错误文字替代完整空态。
+- 用户明确要求网络图片时，按上述素材来源顺序选取；界面先显示已随应用打包的本地 Logo，再异步加载选定来源的图片，失败后保留本地 Logo。部署说明要写明 API 回退、占位、图片兜底和离线预览方式。
 - 注释要精简扼要，只解释“为什么这样做”或“这段负责什么”。不要给每行显而易见的赋值写冗长注释。
 - [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html) / [**Swift**](https://www.swift.org/) 文件头注释必须使用 Jobs 标准模板，包含文件名、模块名和 `Created by Jobs on yyyy年M月d日，星期X.`，不要保留只有文件名和模块名的简化头；文件头注释区域和 `#import` / `import` 导入区域之间必须保留一个空行。
 - OC / Swift 代码以人工阅读为优先，函数、分支、循环、closure / Block 与 DSL 正常提行、逐层缩进，不压成一行或用分号串联动作；`return` 独立成行。具体格式归对应 Skill 的可读性章节，替代旧的 `};return` 紧凑规则。
@@ -29,7 +32,7 @@
 - 批量处理文件时默认跳过 `.git`、`node_modules`、`Pods`、`.dart_tool`、`build`、`DerivedData`。
 - 最终回复要短而准：说明改了哪个文件、核心内容、是否验证。除非用户要求，不要创建提交，不要推送，不要改远程仓库。
 
-## 二、配置维护边界
+## 二、配置维护边界 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 - `💻JobsCodexConfigs/AGENTS.md` 是全局指导源文件；启动注入脚本后，脚本会把它部署到 `~/.codex/AGENTS.md`。
 - [**JobsSkills**](https://github.com/JobsKits/JobsSkills) 是用户级 Skills 的独立标准仓库；`/Users/jobs/.agents/skills` 是现行、内容最完整的基准工作树，不再把备份目录反向覆盖到这里。
@@ -41,7 +44,7 @@
 - `~/.codex/AGENTS.md` 是全局指导文件位置，不是 Skills 主目录；Skills 的用户级位置是 `$HOME/.agents/skills`，仓库级位置是项目里的 `.agents/skills`。
 - 仓库里的 `.agents/skills` 适合项目团队共享；`JobsSkills` 是用户级独立仓库，不等同于某个业务项目的仓库级 Skills。
 
-## 三、Skills 索引
+## 三、Skills 索引 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 - `jobs-macos-shell`：MacOS 原生 Shell / zsh / `.command` / Homebrew / fzf / 自检 / 批量脚本。
 - `jobs-git-repository`：Git 仓库结构、JobsMacEnvVarConfigs、安装与升级入口规则。
@@ -57,7 +60,7 @@
 - `jobs-lottie-stroke-writing`：汉字笔顺 Lottie、一笔一画手写、hanzi-writer-data、trim path、未写不显。
 - `hacker`：Hacker、安全研究、恶意仓库静态审阅、授权渗透测试边界、蓝队排查、IOC 和 HTTP 代理安全测试。
 
-## 四、专项规则加载原则
+## 四、专项规则加载原则 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 - 命中某个任务类型时，优先加载对应 Skill 的完整规则；不要把所有专项规范一次性塞回本全局文件。
 - 写或改 `SKILL.md` 时，优先在现有对应 Skill 上收口；只有长期独立领域、触发边界清晰、现有 Skill 无法承载时，才新增 Skill，不要动不动就新建。
@@ -68,7 +71,7 @@
 - 涉及 OC / Swift 的 DSL、点语法、链式语法、`byXxx` 命名、Apple API 封装或 Jobs 自建 Model 封装时，分别加载 `jobs-objective-c-pods` / `jobs-swift`；两侧公约以“同一 DSL 思想、不同语言实现”为准。
 - DSL 链式方法必须返回可继续链下去的对象；除明确的终止动作外，不写只执行副作用却返回 `void` 的 DSL。返回类型要尽量保持当前主对象类型，避免链条中途降级到父类后丢失子类点语法。
 
-## 五、固定项目路径
+## 五、固定项目路径 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 - Obsidian 永久记忆仓库：`/Users/jobs/Documents/Github/JobsGenesis/JobsConfigOS/📒CodexByObsidian`；实际 Vault：`📒CodexByObsidian/JobsCodexMemory`。
 - Swift 侧 iOS 项目：`../../JobsBaseConfig/JobsBaseConfig@JobsSwiftBaseConfigDemo`。
@@ -78,3 +81,14 @@
 - 从 OC 新项目向 OC 老项目平移能力时，要符合老项目“功能集成于主工程”的特点：不要把新项目的本地 Pod 形态照搬到老项目，也不要新增 Pod 依赖；应把源码、资源、Demo 入口和工程引用平移到老项目主工程既有目录与 target 中。
 
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
+
+<!-- CODEGRAPH_START -->
+## CodeGraph <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
+
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+<!-- CODEGRAPH_END -->

@@ -84,7 +84,7 @@ TARGET_CODEX_CONFIG="$HOME/.codex/config.toml" \
 
 ## 四、运行方式 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-### 4.1、双击运行
+### 4.1、双击运行 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 - 在 [**Finder**](https://support.apple.com/guide/mac-help/welcome/mac) 中双击：
 
@@ -95,7 +95,7 @@ TARGET_CODEX_CONFIG="$HOME/.codex/config.toml" \
 - 脚本启动后会先展示内置自述和本 `README.md`，确认无误后按回车继续。
 - 确认前按 `Ctrl+C` 可以取消，不会继续执行部署流程。
 
-### 4.2、终端运行
+### 4.2、终端运行 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 ```shell
 cd "."
@@ -103,7 +103,7 @@ chmod +x "【MacOS】Codex配置注入替换工具.command"
 ./"【MacOS】Codex配置注入替换工具.command"
 ```
 
-### 4.3、子模块下载与同步
+### 4.3、子模块下载与同步 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 ```shell
 ./"【MacOS】⏬下载配置当前Git子模块.command"
@@ -111,7 +111,7 @@ chmod +x "【MacOS】Codex配置注入替换工具.command"
 
 脚本只管理 `https://github.com/JobsKits/JobsSkills` 到父仓 `skills` 路径的子模块关系。
 
-### 4.4、静态检查
+### 4.4、静态检查 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 修改脚本后，至少执行一次语法检查：
 
@@ -205,7 +205,7 @@ flowchart TD
 
 ## 八、Codex 位置说明 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-### 8.1、全局指导文件
+### 8.1、全局指导文件 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 | 位置 | 说明 |
 | --- | --- |
@@ -216,7 +216,7 @@ flowchart TD
 
 `~/.codex/AGENTS.md` 是全局指导文件位置，不是 Skills 主目录。
 
-### 8.2、Skills 位置
+### 8.2、Skills 位置 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 | 位置 | 作用 |
 | --- | --- |
@@ -234,7 +234,7 @@ skill-name/
 
 `SKILL.md` 必须包含 `name` 和 `description` 元数据。Codex 会先读取技能名称、描述和路径，只有命中任务时才加载完整 `SKILL.md`。
 
-### 8.3、Codex++ 管理器可见性
+### 8.3、Codex++ 管理器可见性 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 官方 Codex 会从 `$HOME/.agents/skills` 扫描用户级 Skills。Codex++ 管理器的「工具与插件 / Skills」页签通常展示 `~/.codex/config.toml` 中的 `[[skills.config]]` 条目。
 
