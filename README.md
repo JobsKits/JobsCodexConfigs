@@ -28,7 +28,7 @@
 - 不替换整个 `~/.codex`。
 - 不清空 `~/.codex`、日志、会话、数据库或登录态。
 - 不把 `~/.codex/AGENTS.md` 回写到仓库。
-- 不用父仓备份反向覆盖 `$HOME/.agents/skills` 现行工作树。
+- 配置注入流程不反向覆盖 `$HOME/.agents/skills` 现行工作树；手动双向同步由 `skills/同步Skills.command` 单独选择和确认。
 - 不把所有专项规则重新塞回 `AGENTS.md`。
 
 ---
@@ -54,6 +54,7 @@
 | --- | --- |
 | `AGENTS.md` | Codex 全局指导源文件，部署到 `~/.codex/AGENTS.md`。 |
 | `skills/` | `JobsSkills` Git 子模块挂载；父仓只记录子仓提交指针。 |
+| `skills/同步Skills.command` | 手动选择系统 → 子模块或子模块 → 系统，用 [**fzf**](https://formulae.brew.sh/formula/fzf) 多选 Skills，默认全部同步，预览确认并备份已有目标。 |
 | `【MacOS】⏬下载配置当前Git子模块.command` | 下载、登记和同步 `JobsSkills` 子模块。 |
 | `【MacOS】Codex配置注入替换工具.command` | 检查环境、部署 `AGENTS.md`、注册现行 `JobsSkills` 并重启 Codex；不覆盖 Skills 工作树。 |
 | `config.toml（Token中转站的配置）.toml` | Token 中转站 / model provider 配置参考，不由脚本整文件部署。 |
@@ -110,6 +111,8 @@ chmod +x "【MacOS】Codex配置注入替换工具.command"
 ```
 
 脚本只管理 `https://github.com/JobsKits/JobsSkills` 到父仓 `skills` 路径的子模块关系。
+
+需要在本地子模块与系统用户级 Skills 之间复制内容时，运行 `./skills/同步Skills.command`。选择方向后进入 fzf 多选菜单，第一项默认“全部同步”；预览确认后备份已有目标，再同步所选包。具体范围、取消方式和日志见 [Skills 同步说明](./skills/README.md)。
 
 ### 4.4、静态检查 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
