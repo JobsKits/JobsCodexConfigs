@@ -34,7 +34,7 @@
 
 ## 二、配置维护边界 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-- `💻JobsCodexConfigs/AGENTS.md` 是全局指导源文件；启动注入脚本后，脚本会把它部署到 `~/.codex/AGENTS.md`。
+- `💻JobsCodexConfigs/AGENTS.md` 是全局指导源文件。每次新增或修改全局指导后，必须在同一任务结束前同步到 `~/.codex/AGENTS.md`，并用 `cmp` 验证逐字节一致，不等待下次启动注入脚本或用户提醒；同步前先比较差异，运行态有有效独有规则时先并回标准源，保留已有改动。配置注入仍以该标准源为部署来源；本地文件同步不代表授权 Git 提交或推送。
 - [**JobsSkills**](https://github.com/JobsKits/JobsSkills) 是用户级 Skills 的独立标准仓库；`/Users/jobs/.agents/skills` 是现行、内容最完整的基准工作树，不再把备份目录反向覆盖到这里。
 - `💻JobsCodexConfigs/skills` 只作为 `JobsSkills` 的 Git 子模块挂载；父仓只跟踪 `.gitmodules` 和 gitlink 指针，不再跟踪该目录内的独立文件。
 - 修改专项规则时，以 `$HOME/.agents/skills/<skill-name>/SKILL.md` 所在的 `JobsSkills` 工作树为基准；单独提交、推送 `JobsSkills` 后，再在 `💻JobsCodexConfigs` 中更新子模块指针。

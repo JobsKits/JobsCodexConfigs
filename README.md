@@ -12,6 +12,27 @@
 
 全局规则以本仓库 `AGENTS.md` 为源头；专项 Skills 以 `$HOME/.agents/skills` 的 `JobsSkills` 工作树为现行基准。父仓中的 `skills` 只是子模块挂载和版本指针，不再保留一份由父仓直接跟踪的 Skills 备份。
 
+<strong id="submodule-quick-look">父子仓多平台地址速览</strong>
+
+当前 `./.gitmodules` 使用相对地址，挂载独立 `JobsSkills` 仓库：
+
+```ini
+[submodule "skills"]
+    path = skills
+    url = ../JobsSkills.git
+    branch = main
+```
+
+从下列父仓地址全新克隆、没有本地 URL 覆盖时，结果如下。前两行来自本地已配置的 [**GitHub**](https://github.com) / [**Gitee**](https://gitee.com) 远端；自建平台仅为结构示例，未部署。
+
+| 平台 | 父仓克隆地址 | 子仓解析地址 |
+| --- | --- | --- |
+| GitHub | `git@github.com:JobsKits/JobsCodexConfigs.git` | `git@github.com:JobsKits/JobsSkills.git` |
+| Gitee | `git@gitee.com:JobsGo/JobsCodexConfigs.git` | `git@gitee.com:JobsGo/JobsSkills.git` |
+| 自建平台，仅结构示例 | `ssh://git@git.example.com:2222/team/JobsCodexConfigs.git` | `ssh://git@git.example.com:2222/team/JobsSkills.git` |
+
+`path` 是本地挂载目录，`url` 是独立子仓位置；相对 URL 跟随父仓默认远端的平台、组织、协议与端口，前提是该平台已有对应子仓及父仓锁定的提交。已有克隆须核对默认远端和本地子模块配置，仅新增 remote 不会切换线路；父仓仍只跟踪 `skills` 的 gitlink。
+
 ---
 
 ## 一、项目定位 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
