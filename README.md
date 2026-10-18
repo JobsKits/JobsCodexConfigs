@@ -4,9 +4,13 @@
 
 [toc]
 
+[本仓目录结构](#repository-layout) · [Git 子模块脚本](#git-submodule-scripts) · [配置部署流程](#repository-script-flows)
+
 ---
 
 ## 🔥 <font id=前言>前言</font>
+
+[**Git**](https://git-scm.com/) 子模块脚本的用途与执行顺序见[专章说明](#git-submodule-scripts)。
 
 > `💻JobsCodexConfigs` 是 Jobs 本机 [**Codex**](https://openai.com/codex) 全局配置仓库，负责维护 `AGENTS.md`、挂载独立 [**JobsSkills**](https://github.com/JobsKits/JobsSkills) 子模块，并通过脚本部署全局指导与注册现行用户级 Skills。
 
@@ -37,7 +41,7 @@
 
 **下载脚本的 Gitee 传输规则：** `【MacOS】⏬下载配置当前Git子模块.command` 在本次运行中，将 `git@gitee.com:`、`ssh://git@gitee.com/`、`ssh://git@gitee.com:22/` 开头的标准地址统一通过 `https://gitee.com/` 访问，保留账号、真实仓名和分支；即使设置 `GIT_URL_STYLE=ssh`，这类 Gitee 地址仍使用 HTTPS。首次 `clone --recurse-submodules` 和后续递归同步都继承该规则，历史子模块中的 SSH 地址无需新电脑先配置 SSH 密钥。
 
-规则通过追加进程级 `GIT_CONFIG_COUNT` / `url.https://gitee.com/.insteadOf` 配置传给子进程，不写入全局 Git 配置，也不依赖其它工程路径。GitHub、其它主机及非 `22` 的自定义 SSH 端口保持原规则。克隆或递归更新失败会返回非零状态，停止本轮同步并保留错误；不会再输出该项同步成功。原有清单、浅克隆参数和全量模式的删除重建策略保留。
+规则通过追加进程级 `GIT_CONFIG_COUNT` / `url.https://gitee.com/.insteadOf` 配置传给子进程，不写入全局 Git 配置，也不依赖其它工程路径。GitHub、其它主机及非 `22` 的自定义 SSH 端口保持原规则。克隆或递归更新失败会返回非零状态，停止本轮同步并保留错误；不会再输出该项同步成功。各仓清单与浅克隆参数保留；全量删除重建须输入 `YES` 确认，范围限定为清单目标及对应旧仓名目录。
 
 ## 一、项目定位 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
@@ -58,6 +62,8 @@
 
 ---
 
+<a id="repository-layout"></a>
+
 ## 二、目录结构 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 ```text
@@ -72,6 +78,8 @@
 ├── .gitmodules
 └── skills/（JobsSkills Git 子模块）
 ```
+
+子仓说明：[JobsSkills README](./skills/README.md)。该目录独立维护，本仓只记录关联与提交指针。
 
 关键文件说明：
 
@@ -135,7 +143,7 @@ chmod +x "【MacOS】Codex配置注入替换工具.command"
 ./"【MacOS】⏬下载配置当前Git子模块.command"
 ```
 
-脚本只管理 `https://github.com/JobsKits/JobsSkills` 到父仓 `skills` 路径的子模块关系。
+脚本清单管理 `JobsSkills` 到父仓 `skills` 路径的子模块关系，实际下载地址依 `.gitmodules` 与 `REMOTE_NAME` 解析。
 
 需要在本地子模块与系统用户级 Skills 之间复制内容时，运行 `./skills/同步Skills.command`。选择方向后进入 fzf 多选菜单，第一项默认“全部同步”；预览确认后备份已有目标，再同步所选包。具体范围、取消方式和日志见 [Skills 同步说明](./skills/README.md)。
 
@@ -341,5 +349,45 @@ ls -la "$HOME/.agents/skills"
 - 修改脚本后执行 `zsh -n`，确认语法通过再运行。
 
 [**Homebrew**](https://brew.sh/) 安装路径由用户选择：已有可运行安装时复用；确实需要安装时先强提示，只有精确输入大写 `YES` 才选择系统标准目录，其它输入或直接回车选择当前用户的 `.local/homebrew`。`YES` 只表示选择路径，权限与密码由官方安装器实际处理；有管理员权限也可以选用户目录。选定路径失败立即停止，不自动切换；`Ctrl+C` / 输入结束取消整个任务。
+
+## 十二、<span id="git-submodule-scripts">Git 子模块脚本</span> <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+### [【MacOS】⏬下载配置当前Git子模块.command](./【MacOS】⏬下载配置当前Git子模块.command)
+
+> **目的：** 把所选子仓代码更新到远端目标分支最新提交，并维护父仓的子模块关联。
+
+* 阅读说明并确认，定位父仓，载入脚本清单（`JobsSkills` 挂载到 `skills`）。
+
+* 检查父仓远端和分支，先拉取父仓更新。
+  * 父仓有未提交改动时跳过拉取，继续进入子模块菜单。
+
+* 选择处理范围。
+  * 全量：选择清单目标重建；须输入 `YES` 执行，其它输入取消。
+  * 只更新已有：更新清单中本地已有的子仓；一个也没有时转全量。
+  * 多选：只同步勾选项；添加：输入新仓地址后登记并同步。
+
+* 补齐登记，按所选模式检查并处理目标目录；缺失目录会下载，全量模式会先删除重建。
+  * 子仓有未提交改动时停止该次更新或删除。
+
+* 拉取所选子仓，默认优先对齐远端 `main`，没有则改用远端默认分支；再同步其内部子模块到各自父仓记录的提交。
+  * 强制对齐可能覆盖本地目标分支的独有提交；全量重建还可能丢失被删除目录中的本地历史。
+
+* 默认自动提交父仓的子模块登记与指针变化，不自动推送；设 `AUTO_PARENT_COMMIT=0` 可保留待检查。
+
+入口：`./【MacOS】⏬下载配置当前Git子模块.command`。
+
+## 十三、<span id="repository-script-flows">配置部署脚本</span> <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+### [【MacOS】Codex配置注入替换工具.command](./【MacOS】Codex配置注入替换工具.command)
+
+> **目的：** 把本仓 AGENTS 标准源部署到当前用户 Codex，并注册现行用户级 Skills。
+
+* 阅读说明并确认，检查本仓 `AGENTS.md` 和当前用户的 `~/.agents/skills` 工作树。
+* 检查 Homebrew、fzf 和 Codex 应用，按提示补齐缺失依赖。
+  * 已有健康依赖直接复用；安装路径和升级按各自提示选择。
+* 停止正在运行的 Codex，将本仓 `AGENTS.md` 写入 `~/.codex/AGENTS.md`。
+* 扫描现行用户级 Skills，只更新 Codex 配置中的受控注册块，保留块外配置；不复制 Skills 内容。
+* 按检测到的应用选择重启入口，并输出部署结果和日志。
+  * 存在多个 Codex 入口时提供选择；否则使用可用的官方入口。
 
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
