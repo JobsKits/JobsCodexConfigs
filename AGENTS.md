@@ -29,6 +29,7 @@
 - [**Objective-C**](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html) / [**Swift**](https://www.swift.org/) 文件头注释必须使用 Jobs 标准模板，包含文件名、模块名和 `Created by Jobs on yyyy年M月d日，星期X.`，不要保留只有文件名和模块名的简化头；文件头注释区域和 `#import` / `import` 导入区域之间必须保留一个空行。
 - OC / Swift 代码以人工阅读为优先，函数、分支、循环、closure / Block 与 DSL 正常提行、逐层缩进，不压成一行或用分号串联动作；`return` 独立成行。具体格式归对应 Skill 的可读性章节，替代旧的 `};return` 紧凑规则。
 - 不主动执行有副作用的大命令，除非用户明确要求或当前任务必须验证。包括但不限于 `sudo`、`rm -rf`、`chmod -R`、`git reset --hard`、`git clean`、`brew upgrade`、`pod install`、`flutter clean`、`xcodebuild`。
+- 网络代理属于侵入性环境变更：操作前说明目的、影响范围、风险和恢复方式，默认限定当前进程及其子进程；必须能随时切回原状态并保留脱敏审计记录，未经明确授权不得持久化或扩大到系统全局。脚本的模式选择、精确备份、恢复与验证遵循 `jobs-macos-shell`。
 - 批量处理文件时默认跳过 `.git`、`node_modules`、`Pods`、`.dart_tool`、`build`、`DerivedData`。
 - 最终回复要短而准：说明改了哪个文件、核心内容、是否验证。除非用户要求，不要创建提交，不要推送，不要改远程仓库。
 
