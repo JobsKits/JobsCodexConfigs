@@ -2,15 +2,29 @@
 
 ![Jobs出品，必属精品](https://picsum.photos/1500/400)
 
-[toc]
+<!-- jobs-toc:start -->
+<!-- jobs-toc:source {"v":2,"token":"[toc]"} -->
+<details>
+<summary>📚 目录（点击展开 / 收起）</summary>
+
+- [🔥 前言](#jobs-toc-heading-1)
+- [一、总原则](#jobs-toc-heading-2)
+- [二、配置维护边界](#jobs-toc-heading-3)
+- [三、Skills 索引](#jobs-toc-heading-4)
+- [四、专项规则加载原则](#jobs-toc-heading-5)
+- [五、固定项目路径](#jobs-toc-heading-6)
+- [CodeGraph](#jobs-toc-heading-7)
+
+</details>
+<!-- jobs-toc:end -->
 
 ---
 
-## <span id="前言">🔥 前言</span>
+## <span id="jobs-toc-heading-1" data-jobs-toc="v2"><span id="前言">🔥 前言</span></span><!-- jobs-toc:heading-end -->
 
 > 这份文件是 Jobs 本机 Codex 的全局指导文件，部署目标为 `~/.codex/AGENTS.md`。详细的专项规范由独立 [**JobsSkills**](https://github.com/JobsKits/JobsSkills) 仓库管理，现行工作树位于 `$HOME/.agents/skills`，让 Codex 按任务场景自动加载对应技能。
 
-## 一、总原则 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## <span id="jobs-toc-heading-2" data-jobs-toc="v2">一、总原则 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a></span><!-- jobs-toc:heading-end -->
 
 - 默认使用中文沟通，语气直接、清楚、偏工程实用；可以保留一点 Jobs 风格，但不要为了热闹牺牲可读性。
 - 默认称呼用户为“哥”。阶段反馈和最终回复都优先以“哥，”开头，例如完成事项时回复“哥，已完成。”。
@@ -33,7 +47,7 @@
 - 批量处理文件时默认跳过 `.git`、`node_modules`、`Pods`、`.dart_tool`、`build`、`DerivedData`。
 - 最终回复要短而准：说明改了哪个文件、核心内容、是否验证。除非用户要求，不要创建提交，不要推送，不要改远程仓库。
 
-## 二、配置维护边界 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## <span id="jobs-toc-heading-3" data-jobs-toc="v2">二、配置维护边界 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a></span><!-- jobs-toc:heading-end -->
 
 - `💻JobsCodexConfigs/AGENTS.md` 是全局指导源文件。每次新增或修改全局指导后，必须在同一任务结束前同步到 `~/.codex/AGENTS.md`，并用 `cmp` 验证逐字节一致，不等待下次启动注入脚本或用户提醒；同步前先比较差异，运行态有有效独有规则时先并回标准源，保留已有改动。配置注入仍以该标准源为部署来源；本地文件同步不代表授权 Git 提交或推送。
 - [**JobsSkills**](https://github.com/JobsKits/JobsSkills) 是用户级 Skills 的独立标准仓库；`/Users/jobs/.agents/skills` 是现行、内容最完整的基准工作树，不再把备份目录反向覆盖到这里。
@@ -45,7 +59,7 @@
 - `~/.codex/AGENTS.md` 是全局指导文件位置，不是 Skills 主目录；Skills 的用户级位置是 `$HOME/.agents/skills`，仓库级位置是项目里的 `.agents/skills`。
 - 仓库里的 `.agents/skills` 适合项目团队共享；`JobsSkills` 是用户级独立仓库，不等同于某个业务项目的仓库级 Skills。
 
-## 三、Skills 索引 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## <span id="jobs-toc-heading-4" data-jobs-toc="v2">三、Skills 索引 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a></span><!-- jobs-toc:heading-end -->
 
 - `jobs-macos-shell`：MacOS 原生 Shell / zsh / `.command` / Homebrew / fzf / 自检 / 批量脚本。
 - `jobs-git-repository`：Git 仓库结构、JobsMacEnvVarConfigs、安装与升级入口规则。
@@ -61,7 +75,7 @@
 - `jobs-lottie-stroke-writing`：汉字笔顺 Lottie、一笔一画手写、hanzi-writer-data、trim path、未写不显。
 - `hacker`：Hacker、安全研究、恶意仓库静态审阅、授权渗透测试边界、蓝队排查、IOC 和 HTTP 代理安全测试。
 
-## 四、专项规则加载原则 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## <span id="jobs-toc-heading-5" data-jobs-toc="v2">四、专项规则加载原则 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a></span><!-- jobs-toc:heading-end -->
 
 - 命中某个任务类型时，优先加载对应 Skill 的完整规则；不要把所有专项规范一次性塞回本全局文件。
 - 写或改 `SKILL.md` 时，优先在现有对应 Skill 上收口；只有长期独立领域、触发边界清晰、现有 Skill 无法承载时，才新增 Skill，不要动不动就新建。
@@ -72,7 +86,7 @@
 - 涉及 OC / Swift 的 DSL、点语法、链式语法、`byXxx` 命名、Apple API 封装或 Jobs 自建 Model 封装时，分别加载 `jobs-objective-c-pods` / `jobs-swift`；两侧公约以“同一 DSL 思想、不同语言实现”为准。
 - DSL 链式方法必须返回可继续链下去的对象；除明确的终止动作外，不写只执行副作用却返回 `void` 的 DSL。返回类型要尽量保持当前主对象类型，避免链条中途降级到父类后丢失子类点语法。
 
-## 五、固定项目路径 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## <span id="jobs-toc-heading-6" data-jobs-toc="v2">五、固定项目路径 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a></span><!-- jobs-toc:heading-end -->
 
 - Obsidian 永久记忆仓库：`/Users/jobs/Documents/Github/JobsGenesis/JobsConfigOS/📒CodexByObsidian`；实际 Vault：`📒CodexByObsidian/JobsCodexMemory`。
 - Swift 侧 iOS 项目：`../../JobsBaseConfig/JobsBaseConfig@JobsSwiftBaseConfigDemo`。
@@ -84,7 +98,7 @@
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
 
 <!-- CODEGRAPH_START -->
-## CodeGraph <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+## <span id="jobs-toc-heading-7" data-jobs-toc="v2">CodeGraph <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a></span><!-- jobs-toc:heading-end -->
 
 In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
 
