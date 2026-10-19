@@ -30,6 +30,8 @@
   - [【MacOS】⏬下载配置当前Git子模块（可向下同步递归）.command](#jobs-toc-heading-21)
 - [十三、配置部署脚本](#repository-script-flows)
   - [【MacOS】Codex配置注入替换工具.command](#jobs-toc-heading-23)
+- [十四、WorkBuddy 同步](#workbuddy-sync)
+  - [【MacOS】同步Codex配置到WorkBuddy.command](#workbuddy-sync-script)
 
 </details>
 <!-- jobs-toc:end -->
@@ -104,6 +106,7 @@
 ├── icon.png
 ├── config.toml（Token中转站的配置）.toml
 ├── 【MacOS】Codex配置注入替换工具.command
+├── 【MacOS】同步Codex配置到WorkBuddy.command
 ├── 【MacOS】⏬下载配置当前Git子模块（可向下同步递归）.command
 ├── .gitmodules
 └── skills/（JobsSkills Git 子模块）
@@ -120,6 +123,7 @@
 | `skills/同步Skills.command` | 手动选择系统 → 子模块或子模块 → 系统，用 [**fzf**](https://formulae.brew.sh/formula/fzf) 多选 Skills，默认全部同步，预览确认并备份已有目标。 |
 | `【MacOS】⏬下载配置当前Git子模块（可向下同步递归）.command` | 下载、登记和同步 `JobsSkills` 子模块。 |
 | `【MacOS】Codex配置注入替换工具.command` | 检查环境、部署 `AGENTS.md`、注册现行 `JobsSkills` 并重启 Codex；不覆盖 Skills 工作树。 |
+| `【MacOS】同步Codex配置到WorkBuddy.command` | 把 `skills/` 单向部署到 `~/.workbuddy/skills/`，不碰 `~/.codex`；原全局规约渲染（依赖 `workbuddy/AGENTS.workbuddy.md`）已于 2026-10-19 随镜像目录移除而停用。 |
 | `config.toml（Token中转站的配置）.toml` | Token 中转站 / model provider 配置参考，不由脚本整文件部署。 |
 | `README.md` | 本仓库说明文档，也是脚本运行前展示的主要自述。 |
 
@@ -132,6 +136,7 @@
 | `AGENTS.md` | `~/.codex/AGENTS.md` | 创建 `~/.codex` 后覆盖写入全局指导文件。 |
 | `$HOME/.agents/skills/*/SKILL.md` | `~/.codex/config.toml` | 扫描现行 `JobsSkills` 工作树，删除并重写 Jobs 受控的 `[[skills.config]]` 注册块。 |
 | `skills` 子模块 | `💻JobsCodexConfigs` Git 索引 | 只记录 `JobsSkills` 提交指针，不覆盖用户级工作树。 |
+| `skills/*/SKILL.md` | `~/.workbuddy/skills/<name>/SKILL.md` | 只部署带托管标记的目录，覆盖前备份；无标记同名目录默认跳过。 |
 
 可以用环境变量临时改目标：
 
@@ -426,5 +431,26 @@ ls -la "$HOME/.agents/skills"
 * 扫描现行用户级 Skills，只更新 Codex 配置中的受控注册块，保留块外配置；不复制 Skills 内容。
 * 按检测到的应用选择重启入口，并输出部署结果和日志。
   * 存在多个 Codex 入口时提供选择；否则使用可用的官方入口。
+
+## 十四、<span id="workbuddy-sync">WorkBuddy 同步</span> <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+### <span id="workbuddy-sync-script">[【MacOS】同步Codex配置到WorkBuddy.command](./【MacOS】同步Codex配置到WorkBuddy.command)</span>
+
+> **目的：** 把用户级 Skills 单向部署到 WorkBuddy，不改动 Codex 侧配置。**注意：** 2026-10-19 起本仓不再保存 `workbuddy/AGENTS.workbuddy.md` 镜像，全局规约改由工作机在 `~/.workbuddy` 与个人 `MEMORY.md` 直接维护；本脚本的 `--global-only` 与全局技能渲染随之停用，仅保留 `--skills-only` 的部署能力。
+
+* 自述与确认：先打印内置自述，回车继续；预览变更后必须精确输入 `YES` 才写入，`Ctrl+C` 可取消。
+* 前置检查：`AGENTS.md`、`skills/` 子模块、`~/.workbuddy`、`rsync` / `perl` / `git`；缺少 `workbuddy/AGENTS.workbuddy.md` 时只能走 `--skills-only`。
+* 改写层：`/Users/jobs` → 当前 `$HOME`；`Documents/Github` → 本机实际存在的 `Gitee` / `Github`；只把指代执行主体的 `Codex 需要` / `Codex 跨项目` / `Codex 负责` / `Use when Codex needs` 改写为 WorkBuddy，`JobsCodexConfigs`、`JobsCodexMemory`、`openai.com/codex` 保持原样。
+* 技能部署：根层含 `SKILL.md` 的包复制到 `~/.workbuddy/skills/<name>/`，排除 `.git`、`.gitattributes`、`.gitignore`、`.jobs-markdown-toc`；同时写入 `.jobs-workbuddy-managed.json` 记录来源、提交与同步时间。
+* 覆盖保护：只覆盖带托管标记的目录；无标记的同名目录默认跳过，需 `--force-skills` 才覆盖；写入前把目标技能目录和 `MEMORY.md` 完整备份到 `${XDG_STATE_HOME:-$HOME/.local/state}/jobs-workbuddy-sync/backups/<时间戳>`。
+* 全局规约（**已停用**）：原先把 `workbuddy/AGENTS.workbuddy.md` 的 `${HOME}` 占位渲染后写入个人 `MEMORY.md` 的 `JOBS-WORKBUDDY-GLOBAL` 受管块；镜像目录移除后该路径不再可用，块内容改由工作机直接维护。
+* 全局技能（**已停用**）：原先另存 `~/.workbuddy/skills/jobs-workbuddy-global/SKILL.md`；现已随全局规约一并停用，需完整规约时直接读个人 `MEMORY.md`。
+* 结果校验：技能 frontmatter 含 `name` / `description`、目标目录无 `/Users/jobs` 残留、记忆块存在且行数合规。
+* 参数：`--dry-run` 只预览、`--yes` 跳过确认、`--skills-only`、`--global-only`、`--force-skills`、`--help`。
+* 日志：`${TMPDIR}/【MacOS】同步Codex配置到WorkBuddy.log`。
+
+不同步内容：`config.toml（Token中转站的配置）.toml` 属于 Codex 专有配置，模型供应商、审批策略、沙箱模式、`features` 与 `mcp_servers.node_repl` 在 WorkBuddy 侧没有等价物，强搬只会留下无效 MCP，因此不参与同步；`~/.codex` 与两个 Codex 脚本同样不在本脚本改动范围内。
+
+生效方式：新开一个 WorkBuddy 对话即可加载新的常驻记忆块；技能索引有缓存，未刷新时重启客户端。
 
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
