@@ -37,6 +37,9 @@
 - 用户在主任务执行过程中插入临时问题时，先回答插入问题；回答完成后必须主动回到被打断的主流程继续推进。除非用户明确说“暂停 / 停止 / 改做新任务”，否则不能把插入问题当成本轮终点。若不确定主流程停在哪一步，先用一句话复述当前主流程状态和下一步，再继续执行。
 - 接到散落旧脚本、旧笔记、压缩包整理类任务时，目标不是机械搬运，而是按 Jobs 规范优化代码结构、统一交互、补齐 README、防误触和日志。
 - 凡是任务需要查找、下载或补充图片、图标、占位图、圆形图标及其它 UI 视觉素材，统一先去 [**阿里巴巴矢量图标库 iconfont**](https://www.iconfont.cn/) 查找并下载或复用合适素材；iconfont 没有合适素材时，主动通过 [**Google**](https://www.google.com/) 搜索官方站点、[**Wikipedia**](https://www.wikipedia.org/) / [**Wikimedia Commons**](https://commons.wikimedia.org/) 等可追溯来源，尤其是国旗、组织标识等专有实体，无须为切换来源再次征求许可。用户已提供明确素材时优先使用指定来源。核对图片主体、来源与许可，下载到项目本地资源目录并记录出处；除非用户明确要求网络图片，运行时使用打包资源，不引用外链。不得使用来源不明图片、临时纯色块或无意义占位替代。
+- 凡是编写带图形用户界面（GUI）的程序，无论使用何种语言、框架或平台，都必须提供可用的国际化多语言切换和主题切换两项基础功能。
+  - 主题切换至少提供：白天 / 黑夜 / 跟随系统。
+  - 国际化多语言切换至少完整支持：简体中文 / 繁体中文 / 藏文 / 英文 / 日文 / 法文 / 西班牙文 / 德文 / 俄罗斯文 / 韩文。
 - 所有前端统一执行“服务端优先、本地演示回退”：页面进入 / 刷新和用户写操作都正常请求 API；首屏可先绘制本地假数据让 UI 立即出现，请求成功后用服务端响应替换，失败、超时或响应无法解析时继续用本地假数据并在本地处理可演示操作。接口恢复后，后续成功响应自动覆盖为真数据，不需要手动切换模式。用短且可配置的超时保证未部署服务器时仍能快速看到页面。
 - 前端每个动态数据列表都必须提供无数据占位和重新加载入口。iOS 优先复用 Jobs `JobsEmptyAuto` 的 UIButton 空态模块；其它端使用项目既有等价控件，不用单行错误文字替代完整空态。
 - 用户明确要求网络图片时，按上述素材来源顺序选取；界面先显示已随应用打包的本地 Logo，再异步加载选定来源的图片，失败后保留本地 Logo。部署说明要写明 API 回退、占位、图片兜底和离线预览方式。
@@ -54,9 +57,10 @@
 - 双机分工：工作电脑不能运行 Codex，只在 WorkBuddy 侧创作（灵感、蒸馏出的新习惯通常先落在 WorkBuddy）；私人电脑跑 Codex。因此工作机上产生的 Skill 与全局规则一律以 WorkBuddy 为起点，由 AI 在同一任务内补齐本仓库的 Codex 对应物，不要求用户再手工维护第二份。
 - 同步口径：WorkBuddy 用户级 Skill 增删改后，在 `skills/<skill-name>/`（`JobsSkills` 子模块）补齐 Codex 版 `SKILL.md`——宿主措辞改回 Codex、运行态路径改回 `/Users/jobs/...`、Skill 目录改回 `$HOME/.agents/skills`、记忆目录改回 `~/.codex/memories`；长期全局行为同时写进本 `AGENTS.md`。必须做语义改写，禁止把 `~/.workbuddy/skills` 整目录原样拷进子模块。
 - 单向收口：本仓库只存 Codex 侧的 `AGENTS.md` 与 `skills/`，不存任何 WorkBuddy 镜像或渲染产物。WorkBuddy 侧只在那台工作机上维护（`~/.workbuddy/skills` 与个人 `MEMORY.md`），同步方向永远是 WorkBuddy → 本仓库的语义转译，不存在从本仓库反向生成 WorkBuddy 文件的路径。
-- [**JobsSkills**](https://github.com/JobsKits/JobsSkills) 是用户级 Skills 的独立标准仓库；`/Users/jobs/.agents/skills` 是现行、内容最完整的基准工作树，不再把备份目录反向覆盖到这里。
+- [**JobsSkills**](https://github.com/JobsKits/JobsSkills) 是用户级 Skills 的独立标准仓库；运行态 `/Users/jobs/.agents/skills` 是现行、内容最完整的基准工作树，备份态为 `/Users/jobs/Documents/Github/JobsGenesis/JobsConfigOS/💻JobsCodexConfigs/skills`，不得自动用备份态反向覆盖运行态。
+- 每次写入运行态 Skills 后，必须立即按相同相对路径同步本次变更到备份态，包括同一 Skill 的附件、脚本、模板和资源，并用 `cmp` 或内容哈希验证一致；不等待任务结束、Git 提交、推送或用户提醒。同步前比较差异并保护已有改动，不复制 Git 元数据、不清理无关或目标独有文件；具体冲突保护与核验遵循 `jobs-codex-config-audit`。这项本地同步不授权提交、推送或更新父仓 gitlink。
 - `💻JobsCodexConfigs/skills` 只作为 `JobsSkills` 的 Git 子模块挂载；父仓只跟踪 `.gitmodules` 和 gitlink 指针，不再跟踪该目录内的独立文件。
-- 修改专项规则时，以 `$HOME/.agents/skills/<skill-name>/SKILL.md` 所在的 `JobsSkills` 工作树为基准；单独提交、推送 `JobsSkills` 后，再在 `💻JobsCodexConfigs` 中更新子模块指针。
+- 修改专项规则时，以 `$HOME/.agents/skills/<skill-name>/SKILL.md` 所在的 `JobsSkills` 工作树为基准，立即同步备份态；只有用户明确授权版本发布时，才单独提交、推送 `JobsSkills`，再在 `💻JobsCodexConfigs` 中更新子模块指针。
 - Codex 配置注入脚本只从 `💻JobsCodexConfigs/AGENTS.md` 部署全局指导，并扫描现行 `JobsSkills` 工作树生成受控注册块；不复制、删除或覆盖 `JobsSkills` 内容。
 - Obsidian 永久记忆库是跨项目用户数据，不属于 `💻JobsCodexConfigs` 的部署副本；只能按记忆协议直接读写 Vault，不得将整个 Vault 拷贝进 Skills 或运行态配置目录。
 - 如果用户要求更新专项规则，优先更新 `JobsSkills` 仓库中对应 `<skill-name>/SKILL.md`；只有长期全局行为才写入本 `AGENTS.md`。
@@ -94,8 +98,11 @@
 
 - Obsidian 永久记忆仓库：`/Users/jobs/Documents/Github/JobsGenesis/JobsConfigOS/📒CodexByObsidian`；实际 Vault：`📒CodexByObsidian/JobsCodexMemory`。
 - Swift 侧 iOS 项目：`../../JobsBaseConfig/JobsBaseConfig@JobsSwiftBaseConfigDemo`。
+- SwiftUI 侧 iOS 项目：`../../JobsBaseConfig/JobsBaseConfig@JobsSwiftUIBaseConfigDemo`（本机：`/Users/jobs/Documents/Github/JobsBaseConfig/JobsBaseConfig@JobsSwiftUIBaseConfigDemo`）。
 - OC 侧新项目：`../../JobsOCBaseConfigDemo@ByPods`。
 - OC 侧老项目：`../../JobsBaseConfig/JobsBaseConfig@JobsOCBaseConfigDemo`。
+- 李林哲项目：`/Users/jobs/Documents/Github/啄木鸟维修平台-V3.8`。
+- 陈泉羽项目：`/Users/jobs/Documents/Github/学术服务平台`。
 - OC 新项目由 OC 老项目升级改造而来：新项目把老项目中集成于主工程的一部分能力拆解成本地 Pods 管理，拆解过程中只做极小调整，绝大多数新项目本地 Pod 都能在老项目主工程里找到对应来源或对应功能。
 - 从 OC 新项目向 OC 老项目平移能力时，要符合老项目“功能集成于主工程”的特点：不要把新项目的本地 Pod 形态照搬到老项目，也不要新增 Pod 依赖；应把源码、资源、Demo 入口和工程引用平移到老项目主工程既有目录与 target 中。
 
