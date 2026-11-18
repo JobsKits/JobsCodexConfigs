@@ -3,6 +3,9 @@
   "files": [
     ".jobs-markdown-toc/README.md",
     "AGENTS.md",
-    "README.md"
+    "README.md",
+    "【MacOS】Codex配置注入替换工具.command/README.md",
+    "【MacOS】⏬下载配置当前Git子模块（可向下同步递归）.command/README.md",
+    "【MacOS】同步Codex配置到WorkBuddy.command/README.md"
   ]
 }
